@@ -1,0 +1,76 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/python-template"]
+
+[project]
+name = "python-template"
+version = "0.0.1"
+authors = [
+  { name="Felipe Moreno", email="felipe@flpm.dev" },
+]
+description = "A template for Python projects"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [ # For a list of valid classifiers, see https://pypi.org/classifiers/
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = []
+license = {file = "LICENSE"}
+
+[project.optional-dependencies]
+dev = ["pre-commit>=2.20.0"]
+test = ["pytest>=7.2.1", "pytest-cov>=4.0.0", "pytest-mock>=3.10.0", "pytest-randomly>=3.12.0", "requests-mock>=1.11.0"]
+
+[project.urls]
+Homepage = "https://github.com/flpm/python-template"
+Issues = "https://github.com/flpm/python-template/issues"
+
+[tool.numpydoc_validation]
+checks = [
+    "all",
+    "EX01", # don't require examples
+    "SA01", # don't require see also
+    "ES01", # don't require extended summary
+    "SS06", # don't require summary to fit on a single line
+    "SA04", # allow see also entries without descriptions
+]
+exclude = ['\.__(init|repr|str)__$']
+
+[tool.ruff]
+line-length = 88
+select = [
+    "C", # mccabe rules
+    "F", # pyflakes rules
+    "E", # pycodestyle error rules
+    "W", # pycodestyle warning rules
+    "B", # flake8-bugbear rules
+    "I", # isort rules
+]
+ignore = [
+    "C901", # max-complexity-10
+    "E501", # line-too-long
+]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+
+[tool.ruff.isort]
+known-first-party = [
+    "orchestrator",
+    "praxis_admin",
+    "praxis_state",
+    "praxis_toolbox",
+    "praxis_web_api",
+    "pypraxis",
+    "sources",
+    "taskmaster",
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["E402", "F401", "F403"]
