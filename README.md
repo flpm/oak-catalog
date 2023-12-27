@@ -1,3 +1,3 @@
-# python-template
+# Oak Catalog
 
-A template for starting a new repo that will contain a Python project
+A library to manage calatogs for [Oak](https://github.com/flpm/oak).
