@@ -22,10 +22,10 @@ repos:
             --fix,
             --exit-non-zero-on-fix,
             --show-fixes,
-            --config=~/praxis/pre-commit-config/pyproject.toml,
+            #--config=~/praxis/pre-commit-config/pyproject.toml,
           ]
       - id: ruff-format
-        args: [--config=~/praxis/pre-commit-config/pyproject.toml]
+        #args: [--config=~/praxis/pre-commit-config/pyproject.toml]
 
   # python docstrings
   - repo: https://github.com/adamchainz/blacken-docs
@@ -43,7 +43,7 @@ repos:
     rev: v1.6.0
     hooks:
       - id: numpydoc-validation
-        args: [--config=~/praxis/pre-commit-config]
+        # args: [--config=./pre-commit-config]
         exclude: "(tests/|(.*/|^)(setup|blueprint|_examples)\\.py$)"
 
   # shell scripts
