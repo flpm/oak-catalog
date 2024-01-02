@@ -48,8 +48,12 @@ class CatalogEntry(BaseModel):
         The theme of the entry.
     topics : List[str], optional
         The topics of the entry.
+    subjects : List[str], optional
+        The subject(s) of the entry.
     tags : List[str], optional
         The tags of the entry.
+    note : str, optional
+        The note content for the entry.
     location : str, optional
         The location of the entry.
     purchase_date : date, optional
@@ -75,7 +79,7 @@ class CatalogEntry(BaseModel):
     author: List[str] = Field(min_length=1)
     subtitle: str = None
     full_title: str = None
-    narrator: List[str] = None
+    narrator: List[str] = Field(default_factory=list)
     description: str = None
     format: str = None
     length: str = None
@@ -84,13 +88,101 @@ class CatalogEntry(BaseModel):
     publishing_date: date = None
 
     theme: str = None
-    topics: List[str] = None
-    tags: List[str] = None
+    topics: List[str] = Field(default_factory=list)
+    subjects: List[str] = Field(default_factory=list)
+    tags: List[str] = Field(default_factory=list)
     location: str = 'New York'
     purchase_date: date = None
+    note: str = None
 
     entry_creation_date: date = Field(default_factory=date.today)
 
     cover_filename: str = None
     markdown_filename: str = None
     site_url: str = None
+
+    def set_field(self, field: str, value: str, override: bool = False):
+        """
+        Set the given field to the given value.
+
+        Parameters
+        ----------
+        field : str
+            The field to set.
+        value : str
+            The value to set the field to.
+        override : bool, optional
+            Whether to override existing values, by default False.
+
+        Returns
+        -------
+        bool
+            Whether the field was set.
+        """
+        if getattr(self, field) and not override:
+            return False
+        setattr(self, field, value)
+        return True
+
+    def merge(
+        self, entry: 'CatalogEntry', overwrite: bool = False, protected: list = None
+    ):
+        """
+        Merge the given entry into this entry.
+
+        Parameters
+        ----------
+        entry : CatalogEntry
+            The entry to merge into this entry.
+        overwrite : bool, optional
+            Whether to overwrite existing values, by default False.
+        protected : list, optional
+            A list of fields that should not be overwritten, by default the list of manually added fields.
+        """
+        if protected is None:
+            protected = [
+                'entry_type',
+                'entry_creation_date',
+                'theme',
+                'subjects',
+                'tags',
+                'location',
+                'purchase_date',
+                'note',
+            ]
+
+        if entry.entry_id and entry.entry_id != self.entry_id:
+            raise ValueError('Cannot merge entries with different IDs.')
+
+        for field in (
+            'isbn',
+            'asin',
+            'url',
+            'title',
+            'author',
+            'subtitle',
+            'full_title',
+            'narrator',
+            'description',
+            'format',
+            'length',
+            'language',
+            'publisher',
+            'publishing_date',
+            'theme',
+            'topics',
+            'subjects',
+            'tags',
+            'location',
+            'purchase_date',
+            'entry_creation_date',
+            'cover_filename',
+            'markdown_filename',
+            'site_url',
+        ):
+            if getattr(self, field):
+                if getattr(entry, field) and not overwrite:
+                    raise ValueError(f'Cannot overwrite existing {field}.')
+            if field in protected:
+                continue
+            setattr(self, field, getattr(entry, field))

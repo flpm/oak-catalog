@@ -142,13 +142,13 @@ class Catalog(BaseModel):
         """
         return f'Catalog(size={len(self.entries)})'
 
-    def save(self, filename: str = None):
+    def save(self, catalog_filename: str = None):
         """
         Save the catalog to a JSON file.
 
         Parameters
         ----------
-        filename : str, optional
+        catalog_filename : str, optional
             The filename to save the catalog to, by default None.
 
         Raises
@@ -157,11 +157,11 @@ class Catalog(BaseModel):
             If there is an error saving the catalog.
         """
 
-        filename = filename or self.catalog_filename
+        catalog_filename = catalog_filename or self.catalog_filename
 
         try:
-            Path(self.catalog_filename).parent.mkdir(parents=True, exist_ok=True)
-            with open(self.catalog_filename, 'w') as fp:
+            Path(catalog_filename).parent.mkdir(parents=True, exist_ok=True)
+            with open(catalog_filename, 'w') as fp:
                 fp.write(self.model_dump_json(indent=4))
         except Exception as error:
             raise RuntimeError('Unknown error while saving catalog.') from error
@@ -205,3 +205,25 @@ class Catalog(BaseModel):
             If the backup method is not implemented.
         """
         raise NotImplementedError
+
+    def merge(
+        self, catalog: 'Catalog', overwrite: bool = False, protected: list = None
+    ):
+        """
+        Merge the given catalog into this catalog.
+
+        Parameters
+        ----------
+        catalog : Catalog
+            The catalog to merge.
+        overwrite : bool, optional
+            Whether to overwrite existing entries, by default False.
+        protected : list, optional
+            A list of fields that should not be overwritten, by default the list of manually added fields.
+        """
+        for entry in catalog:
+            if entry.entry_id in self.entries:
+                self.entries[entry.entry_id].merge(
+                    entry, overwrite=overwrite, protected=protected
+                )
+            self.entries[entry.entry_id] = entry

@@ -122,3 +122,72 @@ class TestCatalog:
         catalog.save()
         mock_file.assert_called_once_with('./work/catalog.json', 'w')
         mock_file().write.assert_called_once()
+
+    @patch('builtins.open', new_callable=mock_open)
+    def test_save_with_filename(self, mock_file):
+        """Test that a catalog can be saved to a file with a filename."""
+        catalog = Catalog()
+        entry = CatalogEntry(
+            entry_id='test_id',
+            entry_type='book',
+            title='test_title',
+            author=['test_author'],
+        )
+        catalog['test_id'] = entry
+        catalog.save('test.json')
+        mock_file.assert_called_once_with('test.json', 'w')
+        mock_file().write.assert_called_once()
+
+    def test_merge_no_intersection(self):
+        """Test that a catalog can be merged with another catalog with overwrite."""
+        catalog1 = Catalog()
+        catalog2 = Catalog()
+        entry1 = CatalogEntry(
+            entry_id='test_id1',
+            entry_type='book',
+            title='test_title',
+            author=['test_author'],
+        )
+        entry2 = CatalogEntry(
+            entry_id='test_id2',
+            entry_type='book',
+            title='test_title2',
+            author=['test_author2'],
+        )
+        catalog1['test_id1'] = entry1
+        catalog2['test_id2'] = entry2
+        catalog1.merge(catalog2)
+        assert len(catalog1) == 2
+        assert catalog1['test_id1'].entry_id == 'test_id1'
+        assert catalog1['test_id1'].entry_type == 'book'
+        assert catalog1['test_id1'].title == 'test_title'
+        assert catalog1['test_id1'].author == ['test_author']
+        assert catalog1['test_id2'].entry_id == 'test_id2'
+        assert catalog1['test_id2'].entry_type == 'book'
+        assert catalog1['test_id2'].title == 'test_title2'
+        assert catalog1['test_id2'].author == ['test_author2']
+
+    def test_merge_intersection(self):
+        """Test that a catalog merges correctly when they overlap."""
+        catalog1 = Catalog()
+        catalog2 = Catalog()
+        entry1 = CatalogEntry(
+            entry_id='test_id1',
+            entry_type='book',
+            title='test_title',
+            author=['test_author'],
+        )
+        entry2 = CatalogEntry(
+            entry_id='test_id1',
+            entry_type='book',
+            title='test_title2',
+            author=['test_author2'],
+        )
+        catalog1['test_id1'] = entry1
+        catalog2['test_id2'] = entry2
+        catalog1.merge(catalog2, overwrite=True)
+        assert len(catalog1) == 1
+        assert catalog1['test_id1'].entry_id == 'test_id1'
+        assert catalog1['test_id1'].entry_type == 'book'
+        assert catalog1['test_id1'].title == 'test_title2'
+        assert catalog1['test_id1'].author == ['test_author2']
