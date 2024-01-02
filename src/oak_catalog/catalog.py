@@ -223,7 +223,11 @@ class Catalog(BaseModel):
         """
         for entry in catalog:
             if entry.entry_id in self.entries:
-                self.entries[entry.entry_id].merge(
+                changed = self.entries[entry.entry_id].merge(
                     entry, overwrite=overwrite, protected=protected
                 )
+                continue
             self.entries[entry.entry_id] = entry
+            changed = True
+        if changed:
+            self.modification_date = datetime.now()

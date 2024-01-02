@@ -263,3 +263,60 @@ class TestCatalogEntry:
         assert entry.cover_filename == 'test_cover_filename'
         assert entry.markdown_filename == 'test_markdown_filename'
         assert entry.site_url == 'test_site_url'
+
+    def test_merge_changed(self):
+        """Test if the merge returned changed."""
+        entry = CatalogEntry(
+            entry_id='test_id',
+            entry_type='book',
+            title='test_title',
+            author=['test_author'],
+        )
+        changed = entry.merge(
+            CatalogEntry(
+                entry_id='test_id',
+                entry_type='book',
+                title='test_title',
+                subtitle='test_subtitle',
+                full_title='test_full_title',
+                author=['test_author'],
+                narrator=['test_narrator'],
+                description='test_description',
+                format='test_format',
+                length='test_length',
+                language=['test_language'],
+                publisher='test_publisher',
+                publishing_date='2020-01-01',
+                theme='test_theme',
+                topics=['test_topic'],
+                subjects=['test_subject'],
+                tags=['test_tag'],
+                location='test_location',
+                purchase_date='2020-01-01',
+                entry_creation_date='2020-01-01',
+                cover_filename='test_cover_filename',
+                markdown_filename='test_markdown_filename',
+                site_url='test_site_url',
+            ),
+            overwrite=True,
+        )
+        assert changed
+
+    def test_merge_not_changed(self):
+        """Test if the merge entry did not change."""
+        entry = CatalogEntry(
+            entry_id='test_id',
+            entry_type='book',
+            title='test_title',
+            author=['test_author'],
+        )
+        changed = entry.merge(
+            CatalogEntry(
+                entry_id='test_id',
+                entry_type='book',
+                title='test_title',
+                author=['test_author'],
+            ),
+            overwrite=True,
+        )
+        assert not changed

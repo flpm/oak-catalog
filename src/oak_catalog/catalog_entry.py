@@ -138,6 +138,11 @@ class CatalogEntry(BaseModel):
             Whether to overwrite existing values, by default False.
         protected : list, optional
             A list of fields that should not be overwritten, by default the list of manually added fields.
+
+        Returns
+        -------
+        bool
+            Whether the entry was changed.
         """
         if protected is None:
             protected = [
@@ -154,6 +159,7 @@ class CatalogEntry(BaseModel):
         if entry.entry_id and entry.entry_id != self.entry_id:
             raise ValueError('Cannot merge entries with different IDs.')
 
+        changed = False
         for field in (
             'isbn',
             'asin',
@@ -185,4 +191,7 @@ class CatalogEntry(BaseModel):
                     raise ValueError(f'Cannot overwrite existing {field}.')
             if field in protected:
                 continue
-            setattr(self, field, getattr(entry, field))
+            if getattr(entry, field) != getattr(self, field):
+                setattr(self, field, getattr(entry, field))
+                changed = True
+        return changed
