@@ -191,3 +191,33 @@ class TestCatalog:
         assert catalog1['test_id1'].entry_type == 'book'
         assert catalog1['test_id1'].title == 'test_title2'
         assert catalog1['test_id1'].author == ['test_author2']
+
+    def test_backup_filename(self):
+        """Test that a catalog can be backed up with a filename."""
+        catalog = Catalog()
+        entry = CatalogEntry(
+            entry_id='test_id',
+            entry_type='book',
+            title='test_title',
+            author=['test_author'],
+        )
+        catalog['test_id'] = entry
+        with patch.object(Catalog, 'save', return_value=None) as mock_save:
+            filename = catalog.backup('test_backup.json')
+        mock_save.assert_called_once()
+        mock_save.assert_called_with(filename)
+
+    def test_backup_default_filename(self):
+        """Test that a catalog can be backed up with a filename."""
+        catalog = Catalog()
+        entry = CatalogEntry(
+            entry_id='test_id',
+            entry_type='book',
+            title='test_title',
+            author=['test_author'],
+        )
+        catalog['test_id'] = entry
+        with patch.object(Catalog, 'save', return_value=None) as mock_save:
+            filename = catalog.backup()
+        mock_save.assert_called_once()
+        mock_save.assert_called_with(filename)

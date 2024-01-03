@@ -195,16 +195,26 @@ class Catalog(BaseModel):
         except FileNotFoundError as error:
             raise RuntimeError('Catalog file not found.') from error
 
-    def backup(self):
+    def backup(self, backup_filename: str = None):
         """
         Backup the catalog.
 
-        Raises
-        ------
-        NotImplementedError
-            If the backup method is not implemented.
+        Parameters
+        ----------
+        backup_filename : str, optional
+            The filename to save the backup to, by default None.
+
+        Returns
+        -------
+        str
+            The filename of the backup.
         """
-        raise NotImplementedError
+        if backup_filename is None:
+            backup_filename = (
+                f'./backup/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_backup.json'
+            )
+        self.save(backup_filename)
+        return backup_filename
 
     def merge(
         self, catalog: 'Catalog', overwrite: bool = False, protected: list = None
