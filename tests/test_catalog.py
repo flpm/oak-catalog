@@ -1,5 +1,6 @@
 """Test the Catalog class."""
 
+from datetime import date
 from unittest.mock import mock_open, patch
 
 import pytest
@@ -221,3 +222,4 @@ class TestCatalog:
             filename = catalog.backup()
         mock_save.assert_called_once()
         mock_save.assert_called_with(filename)
+        assert filename.split('/')[-1].split('_')[0] == date.today().isoformat()
