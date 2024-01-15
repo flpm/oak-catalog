@@ -13,9 +13,16 @@ class Folder:
         The raw path of the folder.
     path : Path
         The Path object of the folder.
+
+    Parameters
+        ----------
+        folder_path : str
+            The path of the folder.
+        create : bool, optional
+            Whether to create the folder if it does not exist, by default False.
     """
 
-    def __init__(self, folder_path: str):
+    def __init__(self, folder_path: str, create: bool = False):
         """
         Initialize a folder.
 
@@ -23,9 +30,14 @@ class Folder:
         ----------
         folder_path : str
             The path of the folder.
+        create : bool, optional
+            Whether to create the folder if it does not exist, by default False.
         """
         self.path_raw = folder_path
         self.path = Path(folder_path)
+
+        if create:
+            self.create()
 
     def __repr__(self):
         """
