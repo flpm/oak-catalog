@@ -66,6 +66,8 @@ class CatalogEntry(BaseModel):
         The filename of the markdown file of the entry.
     site_url : str, optional
         The URL of the entry in the site.
+    protected_fields : list
+        The list of fields that should not be overwritten.
     """
 
     entry_id: str = Field(min_length=1)
@@ -100,6 +102,8 @@ class CatalogEntry(BaseModel):
     cover_filename: str = None
     markdown_filename: str = None
     site_url: str = None
+
+    protected_fields: list = list()
 
     def set_field(self, field: str, value: str, override: bool = False):
         """
@@ -186,8 +190,9 @@ class CatalogEntry(BaseModel):
             'markdown_filename',
             'site_url',
         ):
-            if getattr(self, field):
-                if getattr(entry, field) and not overwrite:
+            if this_one := getattr(self, field):
+                other_one = getattr(entry, field)
+                if other_one and this_one != other_one and not overwrite:
                     raise ValueError(f'Cannot overwrite existing {field}.')
             if field in protected:
                 continue
