@@ -13,8 +13,6 @@ class MarkdownFile:
     ----------
     filename : str
         The filename of the Markdown file.
-    raw_content : str
-        The raw content of the Markdown file.
     content : str
         The content of the Markdown file.
     frontmatter : dict
@@ -33,7 +31,6 @@ class MarkdownFile:
             Whether to skip reading the Markdown file, by default False.
         """
         self.filename = filename
-        self.raw_content = ''
         self.content = ''
         self.frontmatter = {}
 
@@ -59,17 +56,17 @@ class MarkdownFile:
         Read a markdown file.
         """
         with open(self.filename, 'r') as fp:
-            self.raw_content = fp.read()
+            raw_content = fp.read()
 
-        if self.raw_content.startswith('---\n'):
-            frontmatter_raw, *content_raw = self.raw_content.split('---\n')[1:]
+        if raw_content.startswith('---\n'):
+            frontmatter_raw, *content_raw = raw_content.split('---\n')[1:]
             self.content = '---\n'.join(content_raw).strip()
             self.frontmatter = {
                 k: v.strip() if isinstance(v, str) else v
                 for k, v in yaml.safe_load(frontmatter_raw).items()
             }
         else:
-            self.content = self.raw_content.strip()
+            self.content = raw_content.strip()
             self.frontmatter = {}
 
     def write(self, top_attributes: list = None):
@@ -79,12 +76,10 @@ class MarkdownFile:
         Parameters
         ----------
         top_attributes : list, optional
-            The attributes to put at the top of the frontmatter, by default None
+            The attributes to put at the top of the frontmatter, by default None.
         """
-        with open(self.filename, 'w') as fp:
-            fp.write(self.raw_content)
         if not top_attributes:
-            top_attributes = list()
+            top_attributes = []
 
         top_frontmatter = {}
         bottom_frontmatter = {}
@@ -103,7 +98,6 @@ class MarkdownFile:
             fp.write('---\n')
             fp.write(self.content)
             fp.write('\n')
-        return True
 
     def to_dict(self):
         """
@@ -129,8 +123,6 @@ class OmnivoreMarkdownFile(MarkdownFile):
     ----------
     filename : str
         The filename of the Markdown file.
-    raw_content : str
-        The raw content of the Markdown file.
     content : str
         The content of the Markdown file.
     frontmatter : dict
@@ -148,7 +140,7 @@ class OmnivoreMarkdownFile(MarkdownFile):
 
         if (
             not content_tokens[0].startswith(f"# {self.frontmatter['title']}")
-            or '#omnivore' not in content_tokens[0]
+            or '[Read on Omnivore]' not in content_tokens[0]
         ):
             print(content_tokens[0])
             raise RuntimeError('Markdown file is not from Omnivore.')
@@ -183,8 +175,6 @@ class CatalogEntryMarkdownFile(MarkdownFile):
     ----------
     filename : str
         The filename of the Markdown file.
-    raw_content : str
-        The raw content of the Markdown file.
     content : str
         The content of the Markdown file.
     frontmatter : dict
@@ -193,7 +183,9 @@ class CatalogEntryMarkdownFile(MarkdownFile):
         The catalog entry of the Markdown file.
     """
 
-    def __init__(self, filename: str):
+    def __init__(
+        self, filename: str, skip_read: bool = False, allow_overwrite: bool = False
+    ):
         """
         Initialize a Markdown file for a catalog entry.
 
@@ -201,10 +193,16 @@ class CatalogEntryMarkdownFile(MarkdownFile):
         ----------
         filename : str
             The filename of the Markdown file.
+        skip_read : bool, optional
+            Whether to skip reading the Markdown file, by default False.
+        allow_overwrite : bool, optional
+            Whether to allow overwriting fields, by default False.
         """
         super().__init__(filename, skip_read=True)
         self.catalog_entry = None
-        self.read()
+        self.allow_overwrite = allow_overwrite
+        if not skip_read:
+            self.read()
 
     def read(self):
         """
@@ -215,11 +213,36 @@ class CatalogEntryMarkdownFile(MarkdownFile):
         if not self.catalog_entry:
             self.catalog_entry = read_catalog_entry
         else:
-            if self.catalog_entry.protected_fields:
-                protected = self.catalog_entry.protected_fields
+            if read_catalog_entry.protected_fields:
+                protected = read_catalog_entry.protected_fields
             else:
-                if read_catalog_entry.protected_fields:
-                    protected = read_catalog_entry.protected_fields
-                else:
-                    protected = None
-            self.catalog_entry.merge(read_catalog_entry, protected=protected)
+                protected = None
+            print(protected)
+            self.catalog_entry.merge(
+                read_catalog_entry, protected=protected, overwrite=self.allow_overwrite
+            )
+
+    def write(self, top_attributes: list = None):
+        """
+        Write a markdown file for a catalog entry.
+
+        Parameters
+        ----------
+        top_attributes : list, optional
+            The attributes to put at the top of the frontmatter, by default None.
+        """
+        self.frontmatter = self.catalog_entry.to_dict()
+        del self.frontmatter['description']
+        self.content = self.catalog_entry.description
+        super().write(top_attributes=top_attributes)
+
+    def protect_fields(self, fields: list):
+        """
+        Protect fields in the catalog entry.
+
+        Parameters
+        ----------
+        fields : list
+            The fields to protect.
+        """
+        self.catalog_entry.protected_fields = fields

@@ -30,6 +30,10 @@ class TestFolder:
         """Test that a function can be called for each file in a folder."""
         folder = Folder('tests/test_data')
         files = sorted(folder.for_each(str))
-        assert len(files) == 2
-        assert files[0] == 'tests/test_data/test_file_1.md'
-        assert files[1] == 'tests/test_data/test_file_2.md'
+        assert len(files) == 6
+        assert files[0] == 'tests/test_data/test_catalog_entry.md'
+        assert files[1] == 'tests/test_data/test_catalog_entry_modif.md'
+        assert files[2] == 'tests/test_data/test_catalog_entry_modif_protected.md'
+        assert files[3] == 'tests/test_data/test_catalog_entry_modif_unprotected.md'
+        assert files[4] == 'tests/test_data/test_file_1.md'
+        assert files[5] == 'tests/test_data/test_file_2.md'

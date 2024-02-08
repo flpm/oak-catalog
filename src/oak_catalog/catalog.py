@@ -1,16 +1,7 @@
 """Class to represent the Oak catalog."""
 
-import json
-from datetime import datetime
-from pathlib import Path
-from typing import ClassVar, Dict, Union
 
-from pydantic import BaseModel, Field
-
-from .catalog_entry import CatalogEntry
-
-
-class Catalog(BaseModel):
+class OakCatalog:
     """
     Class to represent the Oak catalog.
 
@@ -34,210 +25,221 @@ class Catalog(BaseModel):
         The location to store cover images.
     """
 
-    entries: Dict[str, CatalogEntry] = Field(default_factory=dict)
+    source_collection = [
+        {
+            'folder': './input/omnivore',
+            'collector': None,
+            'parameters': {'recursive': True},
+        }
+    ]
 
-    load_date: datetime = Field(default_factory=datetime.now)
+    catalog_folder = './output/catalog'
+    image_folder = './output/images'
 
-    creation_date: datetime = Field(default_factory=datetime.now)
-    modification_date: datetime = Field(default_factory=datetime.now)
+    # entries: Dict[str, CatalogEntry] = Field(default_factory=dict)
 
-    catalog_filename: ClassVar[str] = './work/catalog.json'
-    backup_location: ClassVar[str] = './work/backup'
-    markdown_location: ClassVar[str] = './output/markdown'
-    cover_location: ClassVar[str] = './output/covers'
+    # load_date: datetime = Field(default_factory=datetime.now)
 
-    def remove(self, entry_id: str):
-        """
-        Remove an entry from the catalog.
+    # creation_date: datetime = Field(default_factory=datetime.now)
+    # modification_date: datetime = Field(default_factory=datetime.now)
 
-        Parameters
-        ----------
-        entry_id : str
-            The ID of the entry to remove.
-        """
-        self.entries.pop(entry_id)
+    # catalog_filename: ClassVar[str] = "./work/catalog.json"
+    # backup_location: ClassVar[str] = "./work/backup"
+    # markdown_location: ClassVar[str] = "./output/markdown"
+    # cover_location: ClassVar[str] = "./output/covers"
 
-    def __getitem__(self, entry_id: str) -> CatalogEntry:
-        """
-        Get an entry from the catalog.
+    # def remove(self, entry_id: str):
+    #     """
+    #     Remove an entry from the catalog.
 
-        Parameters
-        ----------
-        entry_id : str
-            The ID of the entry to get.
+    #     Parameters
+    #     ----------
+    #     entry_id : str
+    #         The ID of the entry to remove.
+    #     """
+    #     self.entries.pop(entry_id)
 
-        Returns
-        -------
-        CatalogEntry
-            The entry with the given ID.
-        """
-        return self.entries.get(entry_id)
+    # def __getitem__(self, entry_id: str) -> CatalogEntry:
+    #     """
+    #     Get an entry from the catalog.
 
-    def __setitem__(self, entry_id: str, entry: Union[dict, CatalogEntry]):
-        """
-        Add an entry to the catalog.
+    #     Parameters
+    #     ----------
+    #     entry_id : str
+    #         The ID of the entry to get.
 
-        Parameters
-        ----------
-        entry_id : str
-            The ID of the entry to add.
-        entry : Union[dict, CatalogEntry]
-            The entry to add.
+    #     Returns
+    #     -------
+    #     CatalogEntry
+    #         The entry with the given ID.
+    #     """
+    #     return self.entries.get(entry_id)
 
-        Raises
-        ------
-        TypeError
-            If the entry is not a dict or CatalogEntry.
-        """
-        if isinstance(entry, dict):
-            entry = CatalogEntry(**entry)
-        self.entries[entry.entry_id] = entry
+    # def __setitem__(self, entry_id: str, entry: Union[dict, CatalogEntry]):
+    #     """
+    #     Add an entry to the catalog.
 
-    def __iter__(self):
-        """
-        Iterate over the catalog.
+    #     Parameters
+    #     ----------
+    #     entry_id : str
+    #         The ID of the entry to add.
+    #     entry : Union[dict, CatalogEntry]
+    #         The entry to add.
 
-        Returns
-        -------
-        Iterator[CatalogEntry]
-            The entries in the catalog.
-        """
-        return iter(self.entries.values())
+    #     Raises
+    #     ------
+    #     TypeError
+    #         If the entry is not a dict or CatalogEntry.
+    #     """
+    #     if isinstance(entry, dict):
+    #         entry = CatalogEntry(**entry)
+    #     self.entries[entry.entry_id] = entry
 
-    def __len__(self):
-        """
-        Get the number of entries in the catalog.
+    # def __iter__(self):
+    #     """
+    #     Iterate over the catalog.
 
-        Returns
-        -------
-        int
-            The number of entries in the catalog.
-        """
-        return len(self.entries)
+    #     Returns
+    #     -------
+    #     Iterator[CatalogEntry]
+    #         The entries in the catalog.
+    #     """
+    #     return iter(self.entries.values())
 
-    def __contains__(self, entry_id: str):
-        """
-        Check if an entry is in the catalog.
+    # def __len__(self):
+    #     """
+    #     Get the number of entries in the catalog.
 
-        Parameters
-        ----------
-        entry_id : str
-            The ID of the entry to check for.
+    #     Returns
+    #     -------
+    #     int
+    #         The number of entries in the catalog.
+    #     """
+    #     return len(self.entries)
 
-        Returns
-        -------
-        bool
-            True if the entry is in the catalog, False otherwise.
-        """
-        return entry_id in self.entries
+    # def __contains__(self, entry_id: str):
+    #     """
+    #     Check if an entry is in the catalog.
 
-    def __repr__(self):
-        """
-        Get a string representation of the catalog.
+    #     Parameters
+    #     ----------
+    #     entry_id : str
+    #         The ID of the entry to check for.
 
-        Returns
-        -------
-        str
-            A string representation of the catalog.
-        """
-        return f'Catalog(size={len(self.entries)})'
+    #     Returns
+    #     -------
+    #     bool
+    #         True if the entry is in the catalog, False otherwise.
+    #     """
+    #     return entry_id in self.entries
 
-    def save(self, catalog_filename: str = None):
-        """
-        Save the catalog to a JSON file.
+    # def __repr__(self):
+    #     """
+    #     Get a string representation of the catalog.
 
-        Parameters
-        ----------
-        catalog_filename : str, optional
-            The filename to save the catalog to, by default None.
+    #     Returns
+    #     -------
+    #     str
+    #         A string representation of the catalog.
+    #     """
+    #     return f"Catalog(size={len(self.entries)})"
 
-        Raises
-        ------
-        RuntimeError
-            If there is an error saving the catalog.
-        """
+    # def save(self, catalog_filename: str = None):
+    #     """
+    #     Save the catalog to a JSON file.
 
-        catalog_filename = catalog_filename or self.catalog_filename
+    #     Parameters
+    #     ----------
+    #     catalog_filename : str, optional
+    #         The filename to save the catalog to, by default None.
 
-        try:
-            Path(catalog_filename).parent.mkdir(parents=True, exist_ok=True)
-            with open(catalog_filename, 'w') as fp:
-                fp.write(self.model_dump_json(indent=4))
-        except Exception as error:
-            raise RuntimeError('Unknown error while saving catalog.') from error
+    #     Raises
+    #     ------
+    #     RuntimeError
+    #         If there is an error saving the catalog.
+    #     """
 
-    @classmethod
-    def load(cls, catalog_filename: str = None):
-        """
-        Load the catalog from a JSON file.
+    #     catalog_filename = catalog_filename or self.catalog_filename
 
-        Parameters
-        ----------
-        catalog_filename : str, optional
-            The filename to load the catalog from, by default None.
+    #     try:
+    #         Path(catalog_filename).parent.mkdir(parents=True, exist_ok=True)
+    #         with open(catalog_filename, "w") as fp:
+    #             fp.write(self.model_dump_json(indent=4))
+    #     except Exception as error:
+    #         raise RuntimeError("Unknown error while saving catalog.") from error
 
-        Returns
-        -------
-        Catalog
-            The loaded catalog.
+    # @classmethod
+    # def load(cls, catalog_filename: str = None):
+    #     """
+    #     Load the catalog from a JSON file.
 
-        Raises
-        ------
-        RuntimeError
-            If there is an error loading the catalog.
-        """
-        catalog_filename = catalog_filename or cls.catalog_filename
-        try:
-            with open(catalog_filename, 'r') as fp:
-                catalog_data = json.load(fp)
-                print(catalog_data)
-                return Catalog(**catalog_data)
-        except FileNotFoundError as error:
-            raise RuntimeError('Catalog file not found.') from error
+    #     Parameters
+    #     ----------
+    #     catalog_filename : str, optional
+    #         The filename to load the catalog from, by default None.
 
-    def backup(self, backup_filename: str = None):
-        """
-        Backup the catalog.
+    #     Returns
+    #     -------
+    #     Catalog
+    #         The loaded catalog.
 
-        Parameters
-        ----------
-        backup_filename : str, optional
-            The filename to save the backup to, by default None.
+    #     Raises
+    #     ------
+    #     RuntimeError
+    #         If there is an error loading the catalog.
+    #     """
+    #     catalog_filename = catalog_filename or cls.catalog_filename
+    #     try:
+    #         with open(catalog_filename, "r") as fp:
+    #             catalog_data = json.load(fp)
+    #             print(catalog_data)
+    #             return Catalog(**catalog_data)
+    #     except FileNotFoundError as error:
+    #         raise RuntimeError("Catalog file not found.") from error
 
-        Returns
-        -------
-        str
-            The filename of the backup.
-        """
-        if backup_filename is None:
-            backup_filename = (
-                f'./backup/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_backup.json'
-            )
-        self.save(backup_filename)
-        return backup_filename
+    # def backup(self, backup_filename: str = None):
+    #     """
+    #     Backup the catalog.
 
-    def merge(
-        self, catalog: 'Catalog', overwrite: bool = False, protected: list = None
-    ):
-        """
-        Merge the given catalog into this catalog.
+    #     Parameters
+    #     ----------
+    #     backup_filename : str, optional
+    #         The filename to save the backup to, by default None.
 
-        Parameters
-        ----------
-        catalog : Catalog
-            The catalog to merge.
-        overwrite : bool, optional
-            Whether to overwrite existing entries, by default False.
-        protected : list, optional
-            A list of fields that should not be overwritten, by default the list of manually added fields.
-        """
-        for entry in catalog:
-            if entry.entry_id in self.entries:
-                changed = self.entries[entry.entry_id].merge(
-                    entry, overwrite=overwrite, protected=protected
-                )
-                continue
-            self.entries[entry.entry_id] = entry
-            changed = True
-        if changed:
-            self.modification_date = datetime.now()
+    #     Returns
+    #     -------
+    #     str
+    #         The filename of the backup.
+    #     """
+    #     if backup_filename is None:
+    #         backup_filename = (
+    #             f'./backup/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}_backup.json'
+    #         )
+    #     self.save(backup_filename)
+    #     return backup_filename
+
+    # def merge(
+    #     self, catalog: "Catalog", overwrite: bool = False, protected: list = None
+    # ):
+    #     """
+    #     Merge the given catalog into this catalog.
+
+    #     Parameters
+    #     ----------
+    #     catalog : Catalog
+    #         The catalog to merge.
+    #     overwrite : bool, optional
+    #         Whether to overwrite existing entries, by default False.
+    #     protected : list, optional
+    #         A list of fields that should not be overwritten, by default the list of manually added fields.
+    #     """
+    #     for entry in catalog:
+    #         if entry.entry_id in self.entries:
+    #             changed = self.entries[entry.entry_id].merge(
+    #                 entry, overwrite=overwrite, protected=protected
+    #             )
+    #             continue
+    #         self.entries[entry.entry_id] = entry
+    #         changed = True
+    #     if changed:
+    #         self.modification_date = datetime.now()
