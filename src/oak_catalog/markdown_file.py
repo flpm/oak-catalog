@@ -3,6 +3,7 @@
 import yaml
 
 from .catalog_entry import CatalogEntry
+from .utils import validate_author, validate_date
 
 
 class MarkdownFile:
@@ -138,9 +139,9 @@ class OmnivoreMarkdownFile(MarkdownFile):
         super().read()
         content_tokens = self.content.split('\n\n')
 
-        if (
-            not content_tokens[0].startswith(f"# {self.frontmatter['title']}")
-            or '[Read on Omnivore]' not in content_tokens[0]
+        if not content_tokens[0].startswith(f"# {self.frontmatter['title']}") or not (
+            '[Read on Omnivore]' in content_tokens[0]
+            or '#omnivore' in content_tokens[0]
         ):
             print(content_tokens[0])
             raise RuntimeError('Markdown file is not from Omnivore.')
@@ -152,19 +153,64 @@ class OmnivoreMarkdownFile(MarkdownFile):
         else:
             self.frontmatter['highlights'] = []
 
-    def as_catalog_markdown(self):
+        if link := self.frontmatter.get('link'):
+            domain = link.split('://')[1]
+            if ':' in domain:
+                domain = domain.split(':')[0]
+            elif '/' in domain:
+                domain = domain.split('/')[0]
+            self.frontmatter['domain'] = domain
+
+        # remove_from_title = [
+        #     " - The Atlantic",
+        #     " | WIRED",
+        #     " - The New York Times",
+        #     " - Vox",
+        #     " | The New Yorker",
+        #     " - The Verge",
+        #     " | Hacker News",
+        #     " | The Guardian",
+        # ]
+        # for item in remove_from_title:
+        #     self.frontmatter["title"] = (
+        #         self.frontmatter["title"].replace(item, "").strip()
+        #     )
+
+    def as_catalog_markdown(self, folder: str = './test'):
         """
         Convert the Omnivore Markdown file to a catalog Markdown file.
+
+        Parameters
+        ----------
+        folder : str, optional
+            The folder to save the catalog Markdown file, by default None.
 
         Returns
         -------
         CatalogEntryMarkdownFile
             The catalog Markdown file.
         """
-        filename = f'./output/omnivore/{self.frontmatter["id"].lower()}.md'
-        catalog_markdown = CatalogEntryMarkdownFile(filename, skip_read=True)
-        catalog_markdown.frontmatter = self.frontmatter.copy()
-        catalog_markdown.content = '\n\n'.join(self.frontmatter['highlights']) + '----'
+        if not folder:
+            folder = ''
+        filename = f'article_{self.frontmatter["id"].lower()}.md'
+        full_path = f'{folder}/{filename}'
+
+        frontmatter = {
+            'entry_id': self.frontmatter['id'],
+            'entry_type': 'article',
+            'title': self.frontmatter['title'],
+            'author': validate_author(self.frontmatter.get('author')),
+            'site_url': self.frontmatter.get('link'),
+            'tags': self.frontmatter.get('tags', []),
+            'protected_fields': ['entry_id'],
+            'read_date': validate_date(self.frontmatter.get('date_saved')),
+            'published_date': validate_date(self.frontmatter.get('date_published')),
+            'markdown_filename': filename,
+            'publisher': self.frontmatter.get('domain'),
+        }
+        content = '\n\n'.join(self.frontmatter['highlights'])
+
+        return CatalogEntryMarkdownFile.from_data(frontmatter, content, full_path)
 
 
 class CatalogEntryMarkdownFile(MarkdownFile):
@@ -231,7 +277,7 @@ class CatalogEntryMarkdownFile(MarkdownFile):
         top_attributes : list, optional
             The attributes to put at the top of the frontmatter, by default None.
         """
-        self.frontmatter = self.catalog_entry.to_dict()
+        self.frontmatter = self.catalog_entry.dict()
         del self.frontmatter['description']
         self.content = self.catalog_entry.description
         super().write(top_attributes=top_attributes)
@@ -246,3 +292,43 @@ class CatalogEntryMarkdownFile(MarkdownFile):
             The fields to protect.
         """
         self.catalog_entry.protected_fields = fields
+
+    @classmethod
+    def from_data(cls, frontmatter, content, filename):
+        """
+        Create a catalog entry markdown file from data.
+
+        Parameters
+        ----------
+        frontmatter : dict
+            The frontmatter of the catalog entry.
+        content : str
+            The content of the catalog entry.
+        filename : str
+            The filename of the catalog entry.
+
+        Returns
+        -------
+        CatalogEntryMarkdownFile
+            The catalog entry markdown file.
+        """
+        catalog_entry = CatalogEntry(**frontmatter, description=content)
+        result = cls(filename, skip_read=True)
+        result.catalog_entry = catalog_entry
+        return result
+
+    def to_str(self):
+        """
+        Get the string representation of the catalog entry markdown file.
+
+        Returns
+        -------
+        str
+            The string representation of the catalog entry markdown file.
+        """
+        return '\n'.join(
+            [
+                f"{self.frontmatter['title']} ({self.frontmatter['publisher']})",
+                f"by {self.frontmatter['author']}",
+            ]
+        )

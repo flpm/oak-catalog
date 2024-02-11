@@ -42,7 +42,7 @@ class CatalogEntry(BaseModel):
         The language(s) of the entry.
     publisher : str, optional
         The publisher of the entry.
-    publishing_date : date, optional
+    published_date : date, optional
         The publishing date of the entry.
     theme : str, optional
         The theme of the entry.
@@ -78,7 +78,7 @@ class CatalogEntry(BaseModel):
     url: str = None
 
     title: str = Field(min_length=1)
-    author: List[str] = Field(min_length=1)
+    author: List[str] = Field(default_factory=list)
     subtitle: str = None
     full_title: str = None
     narrator: List[str] = Field(default_factory=list)
@@ -87,17 +87,19 @@ class CatalogEntry(BaseModel):
     length: str = None
     language: List[str] = Field(default_factory=lambda: ['English'])
     publisher: str = None
-    publishing_date: date = None
+    published_date: date | str | None = None
 
     theme: str = None
     topics: List[str] = Field(default_factory=list)
     subjects: List[str] = Field(default_factory=list)
     tags: List[str] = Field(default_factory=list)
     location: str = 'New York'
-    purchase_date: date = None
+    purchase_date: date | str = None
     note: str = None
 
     entry_creation_date: date = Field(default_factory=date.today)
+
+    read_date: date | str | None = None
 
     cover_filename: str = None
     markdown_filename: str = None
@@ -178,7 +180,7 @@ class CatalogEntry(BaseModel):
             'length',
             'language',
             'publisher',
-            'publishing_date',
+            'published_date',
             'theme',
             'topics',
             'subjects',
@@ -200,3 +202,14 @@ class CatalogEntry(BaseModel):
                 setattr(self, field, getattr(entry, field))
                 changed = True
         return changed
+
+    def as_dict(self):
+        """
+        Get the entry as a dictionary.
+
+        Returns
+        -------
+        dict
+            The entry as a dictionary.
+        """
+        return self.dict()
