@@ -147,9 +147,18 @@ class OmnivoreMarkdownFile(MarkdownFile):
             raise RuntimeError('Markdown file is not from Omnivore.')
 
         if len(content_tokens) > 3 and content_tokens[2] == '## Highlights':
-            self.frontmatter['highlights'] = [
-                i.split(' [link]')[0] for i in content_tokens[3:]
-            ]
+            highlights = []
+            summary = None
+            for i in content_tokens[3:]:
+                h_parts = i.split(' [link]')
+                highlights.append(h_parts[0])
+                if '$summary' in h_parts[1]:
+                    summary = h_parts[0]
+            if not summary and highlights:
+                summary = highlights[0]
+
+            self.frontmatter['highlights'] = highlights
+            self.frontmatter['summary'] = summary
         else:
             self.frontmatter['highlights'] = []
 
@@ -195,20 +204,33 @@ class OmnivoreMarkdownFile(MarkdownFile):
         filename = f'article_{self.frontmatter["id"].lower()}.md'
         full_path = f'{folder}/{filename}'
 
+        tags = []
+        theme = None
+        for entry in self.frontmatter.get('tags', []):
+            if entry.startswith('_web'):
+                theme = entry.replace('_', '')
+            else:
+                tags.append(entry)
+
         frontmatter = {
             'entry_id': self.frontmatter['id'],
             'entry_type': 'article',
+            'source': 'Omnivore',
             'title': self.frontmatter['title'],
+            'full_title': self.frontmatter['title'],
             'author': validate_author(self.frontmatter.get('author')),
-            'site_url': self.frontmatter.get('link'),
-            'tags': self.frontmatter.get('tags', []),
-            'protected_fields': ['entry_id'],
+            'url': self.frontmatter.get('link'),
+            'tags': tags,
+            'theme': theme,
             'read_date': validate_date(self.frontmatter.get('date_saved')),
             'published_date': validate_date(self.frontmatter.get('date_published')),
             'markdown_filename': filename,
             'publisher': self.frontmatter.get('domain'),
+            'summary': self.frontmatter.get('summary'),
         }
         content = '\n\n'.join(self.frontmatter['highlights'])
+        if theme:
+            print(f'Theme: {theme}')
 
         return CatalogEntryMarkdownFile.from_data(frontmatter, content, full_path)
 
@@ -330,5 +352,6 @@ class CatalogEntryMarkdownFile(MarkdownFile):
             [
                 f"{self.frontmatter['title']} ({self.frontmatter['publisher']})",
                 f"by {self.frontmatter['author']}",
+                self.frontmatter['summary'] if self.frontmatter['summary'] else '',
             ]
         )

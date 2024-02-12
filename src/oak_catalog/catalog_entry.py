@@ -68,10 +68,13 @@ class CatalogEntry(BaseModel):
         The URL of the entry in the site.
     protected_fields : list
         The list of fields that should not be overwritten.
+    summary : str, optional
+        The summary of the entry.
     """
 
     entry_id: str = Field(min_length=1)
     entry_type: Union[Literal['article'], Literal['audiobook'], Literal['book']]
+    source: str = None
 
     isbn: str = None
     asin: str = None
@@ -89,13 +92,14 @@ class CatalogEntry(BaseModel):
     publisher: str = None
     published_date: date | str | None = None
 
-    theme: str = None
+    theme: str | None = None
     topics: List[str] = Field(default_factory=list)
     subjects: List[str] = Field(default_factory=list)
     tags: List[str] = Field(default_factory=list)
     location: str = 'New York'
     purchase_date: date | str = None
     note: str = None
+    summary: str | None = None
 
     entry_creation_date: date = Field(default_factory=date.today)
 
@@ -105,7 +109,7 @@ class CatalogEntry(BaseModel):
     markdown_filename: str = None
     site_url: str = None
 
-    protected_fields: list = list()
+    protected_fields: list = []
 
     def set_field(self, field: str, value: str, override: bool = False):
         """
