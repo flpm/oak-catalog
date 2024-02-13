@@ -73,41 +73,41 @@ class CatalogEntry(BaseModel):
     """
 
     entry_id: str = Field(min_length=1)
-    entry_type: Union[Literal['article'], Literal['audiobook'], Literal['book']]
+    entry_type: Union[Literal["link"], Literal["audiobook"], Literal["book"]]
     source: str = None
 
-    isbn: str = None
-    asin: str = None
-    url: str = None
+    isbn: str | None = None
+    asin: str | None = None
+    url: str | None = None
 
-    title: str = Field(min_length=1)
+    title: str | None = Field(min_length=1)
     author: List[str] = Field(default_factory=list)
-    subtitle: str = None
-    full_title: str = None
-    narrator: List[str] = Field(default_factory=list)
-    description: str = None
-    format: str = None
-    length: str = None
-    language: List[str] = Field(default_factory=lambda: ['English'])
-    publisher: str = None
+    subtitle: str | None = None
+    full_title: str | None = None
+    narrator: List[str] | None = Field(default_factory=list)
+    description: str | None = None
+    format: str | None = None
+    length: str | None = None
+    language: List[str] | None = Field(default_factory=lambda: ["English"])
+    publisher: str | None = None
     published_date: date | str | None = None
 
     theme: str | None = None
     topics: List[str] = Field(default_factory=list)
     subjects: List[str] = Field(default_factory=list)
     tags: List[str] = Field(default_factory=list)
-    location: str = 'New York'
-    purchase_date: date | str = None
-    note: str = None
+    location: str = "New York"
+    purchase_date: date | str | None = None
+    note: str | None = None
     summary: str | None = None
 
     entry_creation_date: date = Field(default_factory=date.today)
 
     read_date: date | str | None = None
 
-    cover_filename: str = None
-    markdown_filename: str = None
-    site_url: str = None
+    cover_filename: str | None = None
+    markdown_filename: str | None = None
+    site_url: str | None = None
 
     protected_fields: list = []
 
@@ -135,7 +135,7 @@ class CatalogEntry(BaseModel):
         return True
 
     def merge(
-        self, entry: 'CatalogEntry', overwrite: bool = False, protected: list = None
+        self, entry: "CatalogEntry", overwrite: bool = False, protected: list = None
     ):
         """
         Merge the given entry into this entry.
@@ -156,50 +156,56 @@ class CatalogEntry(BaseModel):
         """
         if protected is None:
             protected = [
-                'entry_type',
-                'entry_creation_date',
-                'theme',
-                'subjects',
-                'tags',
-                'location',
-                'purchase_date',
-                'note',
+                "entry_type",
+                "entry_creation_date",
+                "theme",
+                "subjects",
+                "tags",
+                "location",
+                "purchase_date",
+                "note",
             ]
 
         if entry.entry_id and entry.entry_id != self.entry_id:
-            raise ValueError('Cannot merge entries with different IDs.')
+            raise ValueError("Cannot merge entries with different IDs.")
 
         changed = False
         for field in (
-            'isbn',
-            'asin',
-            'url',
-            'title',
-            'author',
-            'subtitle',
-            'full_title',
-            'narrator',
-            'description',
-            'format',
-            'length',
-            'language',
-            'publisher',
-            'published_date',
-            'theme',
-            'topics',
-            'subjects',
-            'tags',
-            'location',
-            'purchase_date',
-            'entry_creation_date',
-            'cover_filename',
-            'markdown_filename',
-            'site_url',
+            "isbn",
+            "asin",
+            "url",
+            "title",
+            "author",
+            "subtitle",
+            "full_title",
+            "narrator",
+            "description",
+            "format",
+            "length",
+            "language",
+            "publisher",
+            "published_date",
+            "theme",
+            "topics",
+            "subjects",
+            "tags",
+            "location",
+            "purchase_date",
+            "entry_creation_date",
+            "cover_filename",
+            "markdown_filename",
+            "site_url",
         ):
             if this_one := getattr(self, field):
                 other_one = getattr(entry, field)
+                if isinstance(this_one, list):
+                    this_one = set(this_one)
+                if isinstance(other_one, list):
+                    other_one = set(other_one)
                 if other_one and this_one != other_one and not overwrite:
-                    raise ValueError(f'Cannot overwrite existing {field}.')
+                    print(
+                        f"{self.entry_id} - Prevented overwrite {field}: {this_one} ==> {other_one}"
+                    )
             if field in protected:
                 continue
             if getattr(entry, field) != getattr(self, field):

@@ -32,7 +32,7 @@ class MarkdownFile:
             Whether to skip reading the Markdown file, by default False.
         """
         self.filename = filename
-        self.content = ''
+        self.content = ""
         self.frontmatter = {}
 
         if not skip_read:
@@ -50,25 +50,28 @@ class MarkdownFile:
         str
             The string representation of the Markdown file.
         """
-        return f'MarkdownFile(filename={self.filename} frontmatter={len(self.frontmatter)} content={bool(self.content)})'
+        return f"MarkdownFile(filename={self.filename} frontmatter={len(self.frontmatter)} content={bool(self.content)})"
 
     def read(self):
         """
         Read a markdown file.
         """
-        with open(self.filename, 'r') as fp:
-            raw_content = fp.read()
+        try:
+            with open(self.filename, "r") as fp:
+                raw_content = fp.read()
 
-        if raw_content.startswith('---\n'):
-            frontmatter_raw, *content_raw = raw_content.split('---\n')[1:]
-            self.content = '---\n'.join(content_raw).strip()
-            self.frontmatter = {
-                k: v.strip() if isinstance(v, str) else v
-                for k, v in yaml.safe_load(frontmatter_raw).items()
-            }
-        else:
-            self.content = raw_content.strip()
-            self.frontmatter = {}
+            if raw_content.startswith("---\n"):
+                frontmatter_raw, *content_raw = raw_content.split("---\n")[1:]
+                self.content = "---\n".join(content_raw).strip()
+                self.frontmatter = {
+                    k: v.strip() if isinstance(v, str) else v
+                    for k, v in yaml.safe_load(frontmatter_raw).items()
+                }
+            else:
+                self.content = raw_content.strip()
+                self.frontmatter = {}
+        except FileNotFoundError:
+            pass
 
     def write(self, top_attributes: list = None):
         """
@@ -93,12 +96,12 @@ class MarkdownFile:
 
         frontmatter = {**top_frontmatter, **bottom_frontmatter}
         yaml_frontmatter = yaml.dump(frontmatter, sort_keys=False)
-        with open(self.filename, 'w') as fp:
-            fp.write('---\n')
+        with open(self.filename, "w") as fp:
+            fp.write("---\n")
             fp.write(yaml_frontmatter)
-            fp.write('---\n')
+            fp.write("---\n")
             fp.write(self.content)
-            fp.write('\n')
+            fp.write("\n")
 
     def to_dict(self):
         """
@@ -110,9 +113,9 @@ class MarkdownFile:
             The a dict version of the markdown.
         """
         result = {}
-        result['filename'] = self.filename
-        result['frontmatter'] = self.frontmatter.copy()
-        result['content'] = self.content
+        result["filename"] = self.filename
+        result["frontmatter"] = self.frontmatter.copy()
+        result["content"] = self.content
         return result
 
 
@@ -137,38 +140,38 @@ class OmnivoreMarkdownFile(MarkdownFile):
         Read a markdown file created by Omnivore.
         """
         super().read()
-        content_tokens = self.content.split('\n\n')
+        content_tokens = self.content.split("\n\n")
 
         if not content_tokens[0].startswith(f"# {self.frontmatter['title']}") or not (
-            '[Read on Omnivore]' in content_tokens[0]
-            or '#omnivore' in content_tokens[0]
+            "[Read on Omnivore]" in content_tokens[0]
+            or "#omnivore" in content_tokens[0]
         ):
             print(content_tokens[0])
-            raise RuntimeError('Markdown file is not from Omnivore.')
+            raise RuntimeError("Markdown file is not from Omnivore.")
 
-        if len(content_tokens) > 3 and content_tokens[2] == '## Highlights':
+        if len(content_tokens) > 3 and content_tokens[2] == "## Highlights":
             highlights = []
             summary = None
             for i in content_tokens[3:]:
-                h_parts = i.split(' [link]')
+                h_parts = i.split(" [link]")
                 highlights.append(h_parts[0])
-                if '$summary' in h_parts[1]:
+                if "$summary" in h_parts[1]:
                     summary = h_parts[0]
             if not summary and highlights:
                 summary = highlights[0]
 
-            self.frontmatter['highlights'] = highlights
-            self.frontmatter['summary'] = summary
+            self.frontmatter["highlights"] = highlights
+            self.frontmatter["summary"] = summary
         else:
-            self.frontmatter['highlights'] = []
+            self.frontmatter["highlights"] = []
 
-        if link := self.frontmatter.get('link'):
-            domain = link.split('://')[1]
-            if ':' in domain:
-                domain = domain.split(':')[0]
-            elif '/' in domain:
-                domain = domain.split('/')[0]
-            self.frontmatter['domain'] = domain
+        if link := self.frontmatter.get("link"):
+            domain = link.split("://")[1]
+            if ":" in domain:
+                domain = domain.split(":")[0]
+            elif "/" in domain:
+                domain = domain.split("/")[0]
+            self.frontmatter["domain"] = domain
 
         # remove_from_title = [
         #     " - The Atlantic",
@@ -185,7 +188,7 @@ class OmnivoreMarkdownFile(MarkdownFile):
         #         self.frontmatter["title"].replace(item, "").strip()
         #     )
 
-    def as_catalog_markdown(self, folder: str = './test'):
+    def as_catalog_markdown(self, folder: str = "./test"):
         """
         Convert the Omnivore Markdown file to a catalog Markdown file.
 
@@ -200,37 +203,40 @@ class OmnivoreMarkdownFile(MarkdownFile):
             The catalog Markdown file.
         """
         if not folder:
-            folder = ''
-        filename = f'article_{self.frontmatter["id"].lower()}.md'
-        full_path = f'{folder}/{filename}'
+            folder = ""
+        filename = f'link_{self.frontmatter["id"].lower()}.md'
+        full_path = f"{folder}/{filename}"
 
-        tags = []
+        tags = set()
         theme = None
-        for entry in self.frontmatter.get('tags', []):
-            if entry.startswith('_web'):
-                theme = entry.replace('_', '')
+        entry_format = None
+        for entry in self.frontmatter.get("tags", []):
+            if entry in ("article", "website", "video"):
+                entry_format = entry
+            if entry.startswith("_"):
+                theme = entry.replace("_", "")
+                tags.add(theme)
             else:
-                tags.append(entry)
+                tags.add(entry)
 
         frontmatter = {
-            'entry_id': self.frontmatter['id'],
-            'entry_type': 'article',
-            'source': 'Omnivore',
-            'title': self.frontmatter['title'],
-            'full_title': self.frontmatter['title'],
-            'author': validate_author(self.frontmatter.get('author')),
-            'url': self.frontmatter.get('link'),
-            'tags': tags,
-            'theme': theme,
-            'read_date': validate_date(self.frontmatter.get('date_saved')),
-            'published_date': validate_date(self.frontmatter.get('date_published')),
-            'markdown_filename': filename,
-            'publisher': self.frontmatter.get('domain'),
-            'summary': self.frontmatter.get('summary'),
+            "entry_id": self.frontmatter["id"],
+            "entry_type": "link",
+            "source": "Omnivore",
+            "title": self.frontmatter["title"],
+            "full_title": self.frontmatter["title"],
+            "author": validate_author(self.frontmatter.get("author")),
+            "url": self.frontmatter.get("link"),
+            "tags": list(tags),
+            "format": entry_format,
+            "theme": theme,
+            "read_date": validate_date(self.frontmatter.get("date_saved")),
+            "published_date": validate_date(self.frontmatter.get("date_published")),
+            "markdown_filename": filename,
+            "publisher": self.frontmatter.get("domain"),
+            "summary": self.frontmatter.get("summary"),
         }
-        content = '\n\n'.join(self.frontmatter['highlights'])
-        if theme:
-            print(f'Theme: {theme}')
+        content = "\n\n".join(self.frontmatter["highlights"])
 
         return CatalogEntryMarkdownFile.from_data(frontmatter, content, full_path)
 
@@ -277,18 +283,22 @@ class CatalogEntryMarkdownFile(MarkdownFile):
         Read a markdown file for a catalog entry.
         """
         super().read()
-        read_catalog_entry = CatalogEntry(**self.frontmatter, description=self.content)
-        if not self.catalog_entry:
-            self.catalog_entry = read_catalog_entry
-        else:
-            if read_catalog_entry.protected_fields:
-                protected = read_catalog_entry.protected_fields
-            else:
-                protected = None
-            print(protected)
-            self.catalog_entry.merge(
-                read_catalog_entry, protected=protected, overwrite=self.allow_overwrite
+        if self.frontmatter:
+            read_catalog_entry = CatalogEntry(
+                **self.frontmatter, description=self.content
             )
+            if not self.catalog_entry:
+                self.catalog_entry = read_catalog_entry
+            else:
+                if read_catalog_entry.protected_fields:
+                    protected = read_catalog_entry.protected_fields
+                else:
+                    protected = None
+                self.catalog_entry.merge(
+                    read_catalog_entry,
+                    protected=protected,
+                    overwrite=self.allow_overwrite,
+                )
 
     def write(self, top_attributes: list = None):
         """
@@ -300,8 +310,9 @@ class CatalogEntryMarkdownFile(MarkdownFile):
             The attributes to put at the top of the frontmatter, by default None.
         """
         self.frontmatter = self.catalog_entry.dict()
-        del self.frontmatter['description']
+        del self.frontmatter["description"]
         self.content = self.catalog_entry.description
+        self.read()
         super().write(top_attributes=top_attributes)
 
     def protect_fields(self, fields: list):
@@ -348,10 +359,10 @@ class CatalogEntryMarkdownFile(MarkdownFile):
         str
             The string representation of the catalog entry markdown file.
         """
-        return '\n'.join(
+        return "\n".join(
             [
                 f"{self.frontmatter['title']} ({self.frontmatter['publisher']})",
                 f"by {self.frontmatter['author']}",
-                self.frontmatter['summary'] if self.frontmatter['summary'] else '',
+                self.frontmatter["summary"] if self.frontmatter["summary"] else "",
             ]
         )

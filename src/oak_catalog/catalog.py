@@ -1,5 +1,7 @@
 """Class to represent the Oak catalog."""
 
+from collections import Counter
+
 from .collector import MarkdownCollector
 from .markdown_file import OmnivoreMarkdownFile
 
@@ -22,18 +24,18 @@ class OakCatalog:
 
     source_collection = [
         {
-            'name': 'Omnivore',
-            'folder': '../obsidian/Omnivore/',
-            'collector': MarkdownCollector,
-            'factory': OmnivoreMarkdownFile,
-            'recursive': True,
+            "name": "Omnivore",
+            "folder": "../obsidian/Omnivore/",
+            "collector": MarkdownCollector,
+            "factory": OmnivoreMarkdownFile,
+            "recursive": True,
         }
     ]
 
-    markdown_folder = 'markdown'
-    image_folder = 'images'
+    markdown_folder = "markdown"
+    image_folder = "images"
 
-    def __init__(self, catalog_folder: str = './output'):
+    def __init__(self, catalog_folder: str = "./output"):
         """
         Initialize the catalog.
 
@@ -53,23 +55,26 @@ class OakCatalog:
         sources : list, optional
             The sources to build the catalog from.
         """
+        c = Counter()
         for source in self.source_collection:
-            collector = source['collector']
-            factory = source['factory']
-            folder = source['folder']
-            recursive = source.get('recursive', False)
+            collector = source["collector"]
+            factory = source["factory"]
+            folder = source["folder"]
+            recursive = source.get("recursive", False)
             collector = collector(folder, recursive=recursive)
             for entry in collector.collect(factory=factory):
                 catalog = entry.as_catalog_markdown(
-                    folder=f'{self.catalog_folder}/{self.markdown_folder}'
+                    folder=f"{self.catalog_folder}/{self.markdown_folder}"
                 )
                 catalog.write()
+
                 if catalog.catalog_entry.theme:
-                    print(catalog.to_str())
-                    print(catalog.catalog_entry.tags)
-                    print(catalog.catalog_entry.theme)
-                    print('---')
-                    print(catalog.frontmatter)
+                    # print(catalog.filename)
+                    # print(catalog.to_str())
+                    # print(catalog.catalog_entry.tags)
+                    c[catalog.catalog_entry.theme] += 1
+                    # print("---")
+        print(c.most_common(10))
 
     def backup(self, backup_folder: str = None):
         """
