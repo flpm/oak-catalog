@@ -109,7 +109,7 @@ class CatalogEntry(BaseModel):
     markdown_filename: str | None = None
     site_url: str | None = None
 
-    protected_fields: list = []
+    protected_fields: list | None = None
 
     def set_field(self, field: str, value: str, override: bool = False):
         """
