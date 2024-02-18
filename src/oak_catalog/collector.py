@@ -59,7 +59,7 @@ class FolderCollector(Collector):
         CatalogEntry
             The catalog entry.
         """
-        raise factory(file)
+        return factory(file)
 
     def collect(self, factory=lambda x: x):
         """
@@ -80,7 +80,9 @@ class FolderCollector(Collector):
             raise ValueError('Folder not specified')
 
         folder = Folder(self.folder)
-        for file in folder.for_each(str, glob=self.glob, recursive=self.recursive):
+        for file in folder.for_each(
+            lambda x: x, glob=self.glob, recursive=self.recursive
+        ):
             yield self._collect_from_file(file, factory=factory)
 
 

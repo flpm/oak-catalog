@@ -1,5 +1,7 @@
 """Markdown file class."""
 
+from pathlib import Path
+
 import yaml
 
 from .catalog_entry import CatalogEntry
@@ -57,7 +59,7 @@ class MarkdownFile:
         Read a markdown file.
         """
         try:
-            with open(self.filename, 'r') as fp:
+            with self.filename.open('r') as fp:
                 raw_content = fp.read()
 
             if raw_content.startswith('---\n'):
@@ -96,7 +98,7 @@ class MarkdownFile:
 
         frontmatter = {**top_frontmatter, **bottom_frontmatter}
         yaml_frontmatter = yaml.dump(frontmatter, sort_keys=False)
-        with open(self.filename, 'w') as fp:
+        with self.filename.open('w') as fp:
             fp.write('---\n')
             fp.write(yaml_frontmatter)
             fp.write('---\n')
@@ -188,13 +190,13 @@ class OmnivoreMarkdownFile(MarkdownFile):
         #         self.frontmatter["title"].replace(item, "").strip()
         #     )
 
-    def as_catalog_markdown(self, folder: str = './test'):
+    def as_catalog_markdown(self, folder: Path):
         """
         Convert the Omnivore Markdown file to a catalog Markdown file.
 
         Parameters
         ----------
-        folder : str, optional
+        folder : Path
             The folder to save the catalog Markdown file, by default None.
 
         Returns
@@ -202,10 +204,9 @@ class OmnivoreMarkdownFile(MarkdownFile):
         CatalogEntryMarkdownFile
             The catalog Markdown file.
         """
-        if not folder:
-            folder = ''
+
         filename = f'link_{self.frontmatter["id"].lower()}.md'
-        full_path = f'{folder}/{filename}'
+        full_path = folder / filename
 
         tags = set()
         theme = None

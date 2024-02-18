@@ -160,7 +160,7 @@ class CatalogEntry(BaseModel):
                 'entry_creation_date',
                 'theme',
                 'subjects',
-                'tags',
+                #'tags',
                 'location',
                 'purchase_date',
                 'note',
