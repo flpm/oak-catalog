@@ -55,11 +55,11 @@ class Folder:
             The string representation of the folder.
         """
 
-        result = f"Folder(path={self.path}"
+        result = f'Folder(path={self.path}'
         if self.exists():
-            result += " exists)"
+            result += ' exists)'
         else:
-            result += " non-existent)"
+            result += ' non-existent)'
         return result
 
     def exists(self):
@@ -85,7 +85,7 @@ class Folder:
         """
         self.path.rmdir()
 
-    def for_each(self, glob: str = "*", recursive: bool = False):
+    def for_each(self, glob: str = '*', recursive: bool = False):
         """
         Iterate over each file in the folder.
 
@@ -102,7 +102,7 @@ class Folder:
             The file.
         """
         if recursive:
-            glob = f"**/{glob}"
+            glob = f'**/{glob}'
         for file in self.path.glob(glob):
             yield file
 
@@ -122,7 +122,7 @@ class Folder:
         str
             The content of the markdown file.
         """
-        for markdown_file in self.for_each(glob="*.md", recursive=recursive):
+        for markdown_file in self.for_each(glob='*.md', recursive=recursive):
             yield self.read_markdown(markdown_file)
 
     def write_markdown(
@@ -166,12 +166,12 @@ class Folder:
         else:
             file = self.path / filename
 
-        with file.open("w") as fp:
-            fp.write("---\n")
+        with file.open('w') as fp:
+            fp.write('---\n')
             fp.write(yaml_frontmatter)
-            fp.write("---\n")
+            fp.write('---\n')
             fp.write(content)
-            fp.write("\n")
+            fp.write('\n')
 
     def read_markdown(self, filename: str | Path):
         """
@@ -195,12 +195,12 @@ class Folder:
         else:
             file = self.path / filename
 
-        with file.open("r") as fp:
+        with file.open('r') as fp:
             raw_content = fp.read()
 
-        if raw_content.startswith("---\n"):
-            frontmatter_raw, *content_raw = raw_content.split("---\n")[1:]
-            content = "---\n".join(content_raw).strip()
+        if raw_content.startswith('---\n'):
+            frontmatter_raw, *content_raw = raw_content.split('---\n')[1:]
+            content = '---\n'.join(content_raw).strip()
             frontmatter = {
                 k: v.strip() if isinstance(v, str) else v
                 for k, v in yaml.safe_load(frontmatter_raw).items()
@@ -232,8 +232,8 @@ class Folder:
             file = self.path / filename
 
         frontmatter = entry.model_dump()
-        del frontmatter["description"]
-        content = getattr(entry, "description", "")
+        del frontmatter['description']
+        content = getattr(entry, 'description', '')
 
         self.write_markdown(file, frontmatter, content, top_attributes=top_attributes)
 
