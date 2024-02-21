@@ -1,7 +1,8 @@
 """Classes that collect data to create catalog entries."""
 
+from .entry_data import EntryData, LinkEntryData
 from .folder import Folder
-from .markdown_file import MarkdownFile
+from .utils import validate_author, validate_date
 
 
 class Collector:
@@ -24,120 +25,136 @@ class Collector:
         raise NotImplementedError
 
 
-class FolderCollector(Collector):
+class OmnivoreCollector(Collector):
     """
-    Collects data from a files in a folder to create a catalog entries.
+    Collects data from Omnivore markdown files to create catalog entry.
 
     Attributes
     ----------
-    folder : str
+    folder : str | Folder
         The folder to collect data from.
-    glob : str, optional
-        The glob pattern to match files in the folder, by default "*.md"
-    recursive : bool, optional
-        Whether to search recursively, by default False
+    entry_class : EntryData, optional
+            The entry class to use, by default LinkEntryData
     """
 
-    def __init__(self, folder: str, glob='*', recursive=False):
-        self.folder = folder
-        self.glob = glob
-        self.recursive = recursive
-
-    def _collect_from_file(self, file: str, factory=lambda x: x):
+    def __init__(self, folder: str | Folder, entry_class: EntryData = LinkEntryData):
         """
-        Collect data from a file to create a catalog entry.
+        Initialize the collector.
 
         Parameters
         ----------
-        file : str
-            The file to collect data from.
-        factory : callable, optional
-            The factory to use to create catalog entries, by default lambda x: x.
+        folder : str | Folder
+            The folder to collect data from.
+        entry_class : EntryData, optional
+            The entry class to use, by default EntryData
+
+        Raises
+        ------
+        ValueError
+            If the folder is not a string or a Folder instance.
+        """
+        self.entry_class = entry_class
+        if isinstance(folder, Folder):
+            self.folder = folder
+        elif isinstance(folder, str):
+            self.folder = Folder(folder)
+        else:
+            raise ValueError('Folder must be a string or a Folder instance')
+
+    def collect_one(self, frontmatter: dict):
+        """
+        Collect data to create a catalog entry.
+
+        Parameters
+        ----------
+        frontmatter : dict
+            The data to create the catalog entry.
 
         Returns
         -------
-        CatalogEntry
+        EntryData
             The catalog entry.
         """
-        return factory(file)
 
-    def collect(self, factory=lambda x: x):
-        """
-        Collect data to create catalog entries.
+        tags = set()
+        theme = None
+        entry_format = 'article'
 
-        Parameters
-        ----------
-        factory : callable, optional
-            The factory to use to create catalog entries, by default lambda x: x.
+        content = frontmatter['description']
+        content_tokens = content.split('\n\n')
 
-        Returns
-        -------
-        Iterator[CatalogEntry]
-            The catalog entries.
-        """
-
-        if self.folder is None:
-            raise ValueError('Folder not specified')
-
-        folder = Folder(self.folder)
-        for file in folder.for_each(
-            lambda x: x, glob=self.glob, recursive=self.recursive
+        if not content_tokens[0].startswith(f"# {frontmatter['title']}") or not (
+            '[Read on Omnivore]' in content_tokens[0]
+            or '#omnivore' in content_tokens[0]
         ):
-            yield self._collect_from_file(file, factory=factory)
+            print(content_tokens[0])
+            raise RuntimeError('Markdown file is not from Omnivore.')
 
+        if len(content_tokens) > 3 and content_tokens[2] == '## Highlights':
+            highlights = []
+            summary = None
+            for i in content_tokens[3:]:
+                h_parts = i.split(' [link]')
+                highlights.append(h_parts[0])
+                if '$summary' in h_parts[1]:
+                    summary = h_parts[0]
+            if not summary and highlights:
+                summary = highlights[0]
 
-class MarkdownCollector(FolderCollector):
-    """
-    Collects data from Markdown files in a folder to create a catalog entries.
+            frontmatter['highlights'] = highlights
+            frontmatter['summary'] = summary
+        else:
+            frontmatter['highlights'] = []
 
-    Attributes
-    ----------
-    folder : str
-        The folder to collect data from.
-    glob : str, optional
-        The glob pattern to match files in the folder, by default "*.md"
-    recursive : bool, optional
-        Whether to search recursively, by default False
-    """
+        if link := frontmatter.get('link'):
+            domain = link.split('://')[1]
+            if ':' in domain:
+                domain = domain.split(':')[0]
+            elif '/' in domain:
+                domain = domain.split('/')[0]
+            frontmatter['domain'] = domain
 
-    def __init__(
-        self,
-        folder: str,
-        glob='*.md',
-        recursive=False,
-    ):
-        super().__init__(folder, glob, recursive)
+        for entry in frontmatter.get('tags', []):
+            if entry in ('article', 'website', 'video'):
+                entry_format = entry
+            if entry.startswith('_'):
+                theme = entry.replace('_', '')
+                tags.add(theme)
+            else:
+                tags.add(entry)
 
-    def collect(self, factory=MarkdownFile):
+        filename = f"link_{frontmatter['id'].lower()}.md"
+        new_frontmatter = {
+            'entry_id': frontmatter['id'],
+            'entry_type': 'link',
+            'source': 'Omnivore',
+            'title': frontmatter['title'],
+            'full_title': frontmatter['title'],
+            'author': validate_author(frontmatter.get('author')),
+            'url': frontmatter.get('link'),
+            'domain': frontmatter['domain'],
+            'tags': list(tags),
+            'format': entry_format,
+            'theme': theme,
+            'read_date': validate_date(frontmatter.get('date_saved')),
+            'published_date': validate_date(frontmatter.get('date_published')),
+            'markdown_filename': filename,
+            'publisher': frontmatter.get('domain'),
+            'summary': frontmatter.get('summary'),
+            'description': '\n\n'.join(frontmatter['highlights']),
+            'filename': f'link_{frontmatter["id"].lower()}.md',
+        }
+        return self.entry_class(**new_frontmatter)
+
+    def collect(self):
         """
         Collect data to create catalog entries.
 
-        Parameters
-        ----------
-        factory : callable, optional
-            The factory to use to create catalog entries, by default lambda x: x.
-
         Returns
         -------
-        Iterator[CatalogEntry]
-            The catalog entries.
+        Iterator[EntryData], optional
+            The catalog entry, by default EntryData.
         """
-        return super().collect(factory=factory)
-
-    def _collect_from_file(self, file: str, factory):
-        """
-        Collect data from a Markdown file to create a catalog entry.
-
-        Parameters
-        ----------
-        file : str
-            The file to collect data from.
-        factory : callable
-            The factory to use to read the file entries.
-
-        Returns
-        -------
-        CatalogEntry
-            The catalog entry.
-        """
-        return factory(file)
+        for frontmatter, content in self.folder.for_each_markdown():
+            frontmatter['description'] = content
+            yield self.collect_one(frontmatter)

@@ -1,11 +1,24 @@
-"""Represents an Entry in the catalog."""
+"""Represent an Entry in the catalog."""
 
 from .entry_data import EntryData
 from .folder import Folder
 
 
 class Entry:
-    """Represents an Entry in the catalog."""
+    """
+    Represent an Entry in the catalog.
+
+    Attributes
+    ----------
+    entry_id : str
+        The ID of the entry.
+    entry_type : str
+        The type of the entry.
+    filename : str
+        The filename of the entry.
+    data : EntryData
+        The data of the entry.
+    """
 
     def __init__(self, entry_type: str, entry_id: str, data: EntryData) -> None:
         """
@@ -51,6 +64,11 @@ class Entry:
         ----------
         data : EntryData
             The data of the entry.
+
+        Returns
+        -------
+        Entry
+            The Entry.
         """
         return Entry(data.entry_type, data.entry_id, data)
 
@@ -85,7 +103,7 @@ class Entry:
         folder : Folder
             The folder to save the Entry to.
         """
-        folder.save_file(self.filename, self.data)
+        folder.save_entry(self.filename, self.data)
 
     def load(self, folder: Folder) -> None:
         """

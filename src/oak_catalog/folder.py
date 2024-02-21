@@ -55,11 +55,11 @@ class Folder:
             The string representation of the folder.
         """
 
-        result = f'Folder(path={self.path}'
+        result = f"Folder(path={self.path}"
         if self.exists():
-            result += ' exists)'
+            result += " exists)"
         else:
-            result += ' non-existent)'
+            result += " non-existent)"
         return result
 
     def exists(self):
@@ -85,27 +85,49 @@ class Folder:
         """
         self.path.rmdir()
 
-    def for_each(self, func: callable, glob: str = '*', recursive: bool = False):
+    def for_each(self, glob: str = "*", recursive: bool = False):
         """
-        Call the given function for each file in the folder.
+        Iterate over each file in the folder.
 
         Parameters
         ----------
-        func : callableFolder()
-            The function to call for each file.
         glob : str, optional
             The glob pattern to use to find files, by default "*".
         recursive : bool, optional
             Whether to search recursively, by default False.
+
+        Yields
+        ------
+        Path
+            The file.
         """
         if recursive:
-            glob = f'**/{glob}'
+            glob = f"**/{glob}"
         for file in self.path.glob(glob):
-            yield func(file)
+            yield file
+
+    def for_each_markdown(self, recursive: bool = True):
+        """
+        Iterate over each markdown file in the folder.
+
+        Parameters
+        ----------
+        recursive : bool, optional
+            Whether to search recursively, by default False.
+
+        Yields
+        ------
+        dict
+            The frontmatter of the markdown file.
+        str
+            The content of the markdown file.
+        """
+        for markdown_file in self.for_each(glob="*.md", recursive=recursive):
+            yield self.read_markdown(markdown_file)
 
     def write_markdown(
         self,
-        filename: str,
+        filename: str | Path,
         frontmatter: dict,
         content: str,
         top_attributes: list = None,
@@ -115,7 +137,7 @@ class Folder:
 
         Parameters
         ----------
-        filename : str
+        filename : str | Path
             The filename of the markdown file.
         frontmatter : dict
             The frontmatter of the markdown file.
@@ -139,21 +161,25 @@ class Folder:
         frontmatter = {**top_frontmatter, **bottom_frontmatter}
         yaml_frontmatter = yaml.dump(frontmatter, sort_keys=False)
 
-        file = self.path / filename
-        with file.open('w') as fp:
-            fp.write('---\n')
-            fp.write(yaml_frontmatter)
-            fp.write('---\n')
-            fp.write(content)
-            fp.write('\n')
+        if isinstance(filename, Path):
+            file = filename
+        else:
+            file = self.path / filename
 
-    def read_markdown(self, filename: str):
+        with file.open("w") as fp:
+            fp.write("---\n")
+            fp.write(yaml_frontmatter)
+            fp.write("---\n")
+            fp.write(content)
+            fp.write("\n")
+
+    def read_markdown(self, filename: str | Path):
         """
         Read a markdown file.
 
         Parameters
         ----------
-        filename : str
+        filename : str | Path
             The filename of the markdown file.
 
         Returns
@@ -163,48 +189,53 @@ class Folder:
         str
             The content of the markdown file.
         """
-        file = self.path / filename
-        try:
-            with file.open('r') as fp:
-                raw_content = fp.read()
 
-            if raw_content.startswith('---\n'):
-                frontmatter_raw, *content_raw = raw_content.split('---\n')[1:]
-                content = '---\n'.join(content_raw).strip()
-                frontmatter = {
-                    k: v.strip() if isinstance(v, str) else v
-                    for k, v in yaml.safe_load(frontmatter_raw).items()
-                }
-            else:
-                content = raw_content.strip()
-                frontmatter = {}
-        except FileNotFoundError:
-            pass
+        if isinstance(filename, Path):
+            file = filename
+        else:
+            file = self.path / filename
+
+        with file.open("r") as fp:
+            raw_content = fp.read()
+
+        if raw_content.startswith("---\n"):
+            frontmatter_raw, *content_raw = raw_content.split("---\n")[1:]
+            content = "---\n".join(content_raw).strip()
+            frontmatter = {
+                k: v.strip() if isinstance(v, str) else v
+                for k, v in yaml.safe_load(frontmatter_raw).items()
+            }
+        else:
+            content = raw_content.strip()
+            frontmatter = {}
 
         return frontmatter, content
 
-    def write_entry(self, filename: str, entry: EntryData, top_attributes: list = None):
+    def write_entry(
+        self, filename: str | Path, entry: EntryData, top_attributes: list = None
+    ):
         """
         Write an entry to a file.
 
         Parameters
         ----------
-        filename : str
+        filename : str | Path
             The filename of the entry file.
         entry : EntryData
             The entry to write.
         top_attributes : list, optional
             The attributes to put at the top of the frontmatter, by default None.
         """
-        file = self.path / filename
+        if isinstance(filename, Path):
+            file = filename
+        else:
+            file = self.path / filename
 
         frontmatter = entry.model_dump()
-        del frontmatter['description']
-        content = getattr(entry, 'description', '')
+        del frontmatter["description"]
+        content = getattr(entry, "description", "")
 
-        self.write_markdown(
-            filename, frontmatter, content, top_attributes=top_attributes
-        )
+        self.write_markdown(file, frontmatter, content, top_attributes=top_attributes)
 
     def save_entry(
         self, filename: str, entry: EntryData, prevent_overwrite: bool = False
@@ -218,6 +249,8 @@ class Folder:
             The filename of the entry file.
         entry : EntryData
             The entry to save.
+        prevent_overwrite : bool, optional
+            Whether to prevent overwriting existing entries, by default False.
         """
         current_file_entry = self.read_entry(filename, entry.__class__)
         if current_file_entry:
@@ -226,6 +259,8 @@ class Folder:
                 prevent_overwrite=prevent_overwrite,
                 protected=current_file_entry.protected_fields,
             )
+        else:
+            current_file_entry = entry
         self.write_entry(filename, current_file_entry)
 
     def read_entry(self, filename: str, entry_class: EntryData = EntryData):
@@ -237,14 +272,17 @@ class Folder:
         filename : str
             The filename of the entry file.
         entry_class : EntryData, optional
-            The class of the entry, by default EntryData
+            The class of the entry, by default EntryData.
 
         Returns
         -------
         EntryData
             The entry read from the file.
         """
-        frontmatter, content = self.read_markdown(filename)
+        try:
+            frontmatter, content = self.read_markdown(filename)
+        except FileNotFoundError:
+            return None
         entry = entry_class(**frontmatter)
         entry.description = content
         return entry

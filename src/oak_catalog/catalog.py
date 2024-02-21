@@ -3,8 +3,10 @@
 from collections import Counter
 from pathlib import Path
 
-from .collector import MarkdownCollector
-from .markdown_file import OmnivoreMarkdownFile
+from .collector import OmnivoreCollector
+from .entry import Entry
+from .entry_data import LinkEntryData
+from .folder import Folder
 
 
 class OakCatalog:
@@ -26,10 +28,9 @@ class OakCatalog:
     source_collection = [
         {
             'name': 'Omnivore',
-            'folder': Path('../obsidian/Omnivore/'),
-            'collector': MarkdownCollector,
-            'factory': OmnivoreMarkdownFile,
-            'recursive': True,
+            'folder': Folder('../obsidian/Omnivore/'),
+            'collector': OmnivoreCollector,
+            'entry_class': LinkEntryData,
         }
     ]
 
@@ -51,13 +52,17 @@ class OakCatalog:
         else:
             raise ValueError('Invalid catalog_folder type')
 
-        self.catalog_folder = catalog_folder
+        self.catalog_folder_path = catalog_folder
+        self.catalog_folder_path.mkdir(parents=True, exist_ok=True)
+        self.catalog_folder = Folder(self.catalog_folder_path)
 
-        self.markdown_folder = self.catalog_folder / 'markdown'
-        self.markdown_folder.mkdir(parents=True, exist_ok=True)
+        self.markdown_folder_path = self.catalog_folder_path / 'markdown'
+        self.markdown_folder_path.mkdir(parents=True, exist_ok=True)
+        self.markdown_folder = Folder(self.markdown_folder_path)
 
-        self.image_folder = self.catalog_folder / 'images'
-        self.image_folder.mkdir(parents=True, exist_ok=True)
+        self.image_folder_path = self.catalog_folder_path / 'images'
+        self.image_folder_path.mkdir(parents=True, exist_ok=True)
+        self.image_folder = Folder(self.image_folder_path)
 
     def build(self, sources: list = None):
         """
@@ -70,17 +75,16 @@ class OakCatalog:
         """
         c = Counter()
         for source in self.source_collection:
-            collector = source['collector']
-            factory = source['factory']
-            folder = source['folder']
-            recursive = source.get('recursive', False)
-            collector = collector(folder, recursive=recursive)
-            for entry in collector.collect(factory=factory):
-                entry_md = entry.as_catalog_markdown(folder=self.markdown_folder)
-                entry_md.write()
+            collector = source['collector'](
+                source['folder'],
+                entry_class=source['entry_class'],
+            )
+            for entry_data in collector.collect():
+                entry = Entry.from_data(entry_data)
+                entry.save(self.markdown_folder)
 
-                if entry_md.catalog_entry.theme:
-                    c[entry_md.catalog_entry.theme] += 1
+                if entry.data.theme:
+                    c[entry.data.theme] += 1
         print(c.most_common(10))
 
     def backup(self, backup_folder: str = None):

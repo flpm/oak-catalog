@@ -39,7 +39,7 @@ class EntryData(BaseModel):
 
     def merge(
         self,
-        entry: 'CatalogEntry',
+        entry: 'EntryData',
         prevent_overwrite: bool = False,
         protected: list = None,
     ):
@@ -48,7 +48,7 @@ class EntryData(BaseModel):
 
         Parameters
         ----------
-        entry : CatalogEntry
+        entry : EntryData
             The entry to merge into this entry.
         prevent_overwrite : bool, optional
             Whether to overwrite existing non-null values, by default False.
@@ -107,6 +107,10 @@ class AudiobookEntryData(EntryData):
     length: str = None
     purchase_date: date | str | None = None
 
+    protected_fields: list = Field(
+        default_factory=lambda: ['entry_id', 'entry_type', 'protected_fields', 'asin']
+    )
+
 
 class BookEntryData(EntryData):
     """Represent a book entry in the catalog."""
@@ -114,3 +118,7 @@ class BookEntryData(EntryData):
     isbn: str | None = None
     length: str | None = None
     purchase_date: date | str | None = None
+
+    protected_fields: list = Field(
+        default_factory=lambda: ['entry_id', 'entry_type', 'protected_fields', 'isbn']
+    )
