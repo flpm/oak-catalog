@@ -83,8 +83,8 @@ class OakCatalog:
                 entry = Entry.from_data(entry_data)
                 entry.save(self.markdown_folder)
 
-                if entry.data.theme:
-                    c[entry.data.theme] += 1
+                if entry.data.domain:
+                    c[entry.data.domain] += 1
         print(c.most_common(10))
 
     def backup(self, backup_folder: str = None):

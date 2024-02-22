@@ -37,6 +37,9 @@ class EntryData(BaseModel):
         default_factory=lambda: ['entry_id', 'entry_type', 'protected_fields']
     )
 
+    cover_filename: str | None = None
+    cover_url: str | None = None
+
     def merge(
         self,
         entry: 'EntryData',
