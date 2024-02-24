@@ -3,6 +3,7 @@
 import json
 from collections import Counter
 from pathlib import Path
+from pprint import pprint
 
 from .entry_data import AudiobookEntryData, BookEntryData, EntryData, LinkEntryData
 from .folder import Folder
@@ -179,64 +180,64 @@ class OldCatalogCollector(Collector):
     """
 
     theme_map = {
-        'ancient-history': 'ancient-history',
+        'ancient-history': 'history',
         'writing': 'writing',
         'design': 'design',
-        'game-of-go': 'game-of-go',
-        'role-playing-games': 'role-playing-games',
-        'learning-latin': 'learning-latin',
+        'game-of-go': 'go',
+        'role-playing-games': 'rpg',
+        'learning-latin': 'latin',
         'reading': 'reading',
         'language': 'language',
         'linguistics': 'language',
-        'epigraphy': 'ancient-history',
-        'mythology': 'ancient-history',
-        'security': 'engineering',
-        'software': 'engineering',
+        'epigraphy': 'history',
+        'mythology': 'history',
+        'security': 'software',
+        'software': 'software',
         'typography': 'design',
         'internet': 'web',
         'math': 'data',
         'visualization': 'data',
         'data': 'data',
         'graphs': 'data',
-        'archaeology': 'ancient-history',
-        'psychology': 'social-sciences',
-        'sociology': 'social-sciences',
-        'anthropology': 'social-sciences',
-        'autism': 'social-sciences',
-        'anxiety': 'social-sciences',
+        'archaeology': 'history',
+        'psychology': 'humans',
+        'sociology': 'humans',
+        'anthropology': 'humans',
+        'autism': 'humans',
+        'anxiety': 'humans',
         'computational-design': 'design',
-        'economics': 'social-sciences',
-        'engineering': 'engineering',
-        'philosophy': 'philosophy',
-        'novel': 'fiction',
-        'graphic-novels': 'fiction',
-        'fantasy': 'fiction',
+        'economics': 'humans',
+        'engineering': None,
+        'philosophy': 'humans',
+        'novel': None,
+        'graphic-novels': None,
+        'fantasy': None,
         'biography': 'memoir',
-        'business': 'non-fiction',
-        'essays': 'non-fiction',
-        'crime-fiction': 'fiction',
-        'science': 'non-fiction',
-        'history': 'non-fiction',
+        'business': None,
+        'essays': None,
+        'crime-None': None,
+        'science': None,
+        'history': 'history',
         'humor': 'memoirs',
-        'paris': 'fiction',
-        'urbanism': 'social-sciences',
+        'paris': None,
+        'urbanism': None,
         'making': 'making',
-        'drama': 'fiction',
-        'poetry': 'fiction',
-        'entrepreneurship': 'non-fiction',
-        'short-stories': 'fiction',
-        'historical-novel': 'fiction',
-        'medieval-history': 'non-fiction',
-        'logic': 'non-fiction',
-        'financial-markets': 'social-sciences',
-        'photography': 'non-fiction',
-        'puzzles': 'non-fiction',
-        'magic': 'magic',
-        'music': 'non-fiction',
+        'drama': None,
+        'poetry': None,
+        'entrepreneurship': None,
+        'short-stories': None,
+        'historical-novel': None,
+        'medieval-history': 'history',
+        'logic': None,
+        'financial-markets': None,
+        'photography': None,
+        'puzzles': None,
+        'magic': 'thinking',
+        'music': 'memoirs',
         'presentation': 'writing',
-        'pop-up': 'non-fiction',
-        'ciphers': 'engineering',
-        'labyrinths': 'social-sciences',
+        'pop-up': None,
+        'ciphers': 'software',
+        'labyrinths': 'labyrinths',
     }
 
     def __init__(
@@ -279,6 +280,7 @@ class OldCatalogCollector(Collector):
             The catalog entries.
         """
         c = Counter()
+        t = Counter()
         with open(self.catalog_file, 'r') as f:
             catalog_json = json.load(f)
             for book_id, book_types in catalog_json.items():
@@ -296,21 +298,68 @@ class OldCatalogCollector(Collector):
                             book['narrator'] = book.get('narrators')
                         else:
                             continue
+                        if length := book.get('length'):
+                            hours = int(length) // 1000 // 3600
+                            minutes = round(int(length) / 1000 / 60 % 60)
+                            book['length'] = f'{hours}h {minutes}m'
+
+                    if 'tags' not in book:
+                        book['tags'] = set()
+                    if topics := book.get('topics'):
+                        for one_topic in topics:
+                            raw_topic = one_topic.replace('&', ',')
+                            raw_topic = raw_topic.replace('/', ',')
+                            raw_topic = raw_topic.replace('--', ',')
+                            raw_topic = raw_topic.replace(' and ', ',')
+                            topic_list = set()
+                            for i in raw_topic.split(','):
+                                if ':' in i:
+                                    i = i.split(':')[0]
+                                if ' - ' in i:
+                                    i = i.split(' - ')[0]
+                                i = i.strip().lower()
+                                if 'go (game)' in i:
+                                    i = 'go game'
+                                if 'etc' in i:
+                                    continue
+                                if i == 'ya)':
+                                    continue
+                                if '(' in i:
+                                    if 'typography' in i:
+                                        i = 'typography'
+                                    i = i.split('(')[0].strip()
+                                if i.startswith('f2521') or i.startswith('gv1469.'):
+                                    continue
+                                if i.startswith('u.s.'):
+                                    i = i.replace('u.s.', 'us')
+                                if i == 'go':
+                                    i = 'go game'
+                                if i:
+                                    i = i.replace(' ', '-')
+                                    topic_list.add(i)
+                            t.update(topic_list)
+                            book['tags'].update(topic_list)
+
                     book['length'] = str(book.get('length'))
 
                     book['source'] = book['source'].lower()
                     if theme := book.get('theme'):
-                        theme = theme.replace(' ', '-')
+                        theme = theme.strip().replace(' ', '-')
                         if new_theme := self.theme_map.get(theme):
                             book['theme'] = new_theme
                         else:
                             book['theme'] = None
-                            book['tags'] = [theme]
-                            c[theme] += 1
+                            book['tags'].add(theme)
+
+                    c[len(book['tags'])] += 1
 
                     if book_type == 'book':
                         yield self.book_entry_class(**book)
                     elif book_type == 'audiobook':
                         yield self.audiobook_entry_class(**book)
-        print(book.keys())
-        print(c.most_common())
+        # print(book.keys())
+        # print(c.most_common())
+        pprint([i for i in t.most_common() if 'go' in i[0]])
+        # print("---")
+        # pprint([i for i in t if t[i] == 1])
+        # pprint(c.most_common(100))
