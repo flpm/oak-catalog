@@ -34,7 +34,15 @@ class EntryData(BaseModel):
 
     source: str = None
     protected_fields: list = Field(
-        default_factory=lambda: ['entry_id', 'entry_type', 'protected_fields']
+        default_factory=lambda: [
+            'entry_id',
+            'entry_type',
+            'protected_fields',
+            'tags',
+            'theme',
+            'summary',
+            'description',
+        ]
     )
 
     cover_filename: str | None = None
@@ -111,7 +119,16 @@ class AudiobookEntryData(EntryData):
     purchase_date: date | str | None = None
 
     protected_fields: list = Field(
-        default_factory=lambda: ['entry_id', 'entry_type', 'protected_fields', 'asin']
+        default_factory=lambda: [
+            'entry_id',
+            'entry_type',
+            'protected_fields',
+            'asin',
+            'tags',
+            'theme',
+            'summary',
+            'description',
+        ]
     )
 
 
@@ -123,5 +140,14 @@ class BookEntryData(EntryData):
     purchase_date: date | str | None = None
 
     protected_fields: list = Field(
-        default_factory=lambda: ['entry_id', 'entry_type', 'protected_fields', 'isbn']
+        default_factory=lambda: [
+            'entry_id',
+            'entry_type',
+            'protected_fields',
+            'isbn',
+            'tags',
+            'theme',
+            'summary',
+            'description',
+        ]
     )

@@ -288,6 +288,8 @@ class OldCatalogCollector(Collector):
                         continue
                     book['entry_id'] = book_id
                     book['entry_type'] = book_type
+                    if book.get('protected_fields'):
+                        del book['protected_fields']
                     if book.get('authors'):
                         book['author'] = book['authors']
                     else:
