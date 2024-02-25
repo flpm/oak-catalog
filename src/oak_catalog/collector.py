@@ -3,7 +3,6 @@
 import json
 from collections import Counter
 from pathlib import Path
-from pprint import pprint
 
 from .entry_data import AudiobookEntryData, BookEntryData, EntryData, LinkEntryData
 from .folder import Folder
@@ -357,9 +356,3 @@ class OldCatalogCollector(Collector):
                         yield self.book_entry_class(**book)
                     elif book_type == 'audiobook':
                         yield self.audiobook_entry_class(**book)
-        # print(book.keys())
-        # print(c.most_common())
-        pprint([i for i in t.most_common() if 'go' in i[0]])
-        # print("---")
-        # pprint([i for i in t if t[i] == 1])
-        # pprint(c.most_common(100))

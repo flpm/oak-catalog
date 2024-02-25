@@ -3,9 +3,9 @@
 from collections import Counter
 from pathlib import Path
 
-from .collector import OmnivoreCollector
+from .collector import OldCatalogCollector, OmnivoreCollector
 from .entry import Entry
-from .entry_data import LinkEntryData
+from .entry_data import AudiobookEntryData, BookEntryData, LinkEntryData
 from .folder import Folder
 
 
@@ -28,10 +28,21 @@ class OakCatalog:
     source_collection = [
         {
             'name': 'Omnivore',
-            'folder': Folder('../obsidian/Omnivore/'),
+            'params': {
+                'folder': Folder('../obsidian/Omnivore/'),
+                'entry_class': LinkEntryData,
+            },
             'collector': OmnivoreCollector,
-            'entry_class': LinkEntryData,
-        }
+        },
+        {
+            'name': 'Old Catalog',
+            'params': {
+                'catalog_file': Path('../oak/work/catalogue.json'),
+                'book_entry_class': BookEntryData,
+                'audiobook_entry_class': AudiobookEntryData,
+            },
+            'collector': OldCatalogCollector,
+        },
     ]
 
     def __init__(self, catalog_folder: str = None):
@@ -75,17 +86,14 @@ class OakCatalog:
         """
         c = Counter()
         for source in self.source_collection:
-            collector = source['collector'](
-                source['folder'],
-                entry_class=source['entry_class'],
-            )
+            print(f"Collecting from {source['name']}: ", end='')
+            collector = source['collector'](**source['params'])
             for entry_data in collector.collect():
+                c[source['name']] += 1
+                print('.', end='')
                 entry = Entry.from_data(entry_data)
                 entry.save(self.markdown_folder)
-
-                if entry.data.domain:
-                    c[entry.data.domain] += 1
-        print(c.most_common(10))
+            print(f" done ({c[source['name']]} entries)")
 
     def backup(self, backup_folder: str = None):
         """
