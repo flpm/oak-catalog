@@ -126,8 +126,10 @@ class OldCatalogCollector(Collector):
         """
         Collect data to create catalog entries.
 
-        Returns
-        -------
+        Yields
+        ------
+        bytes
+            The cover image bytes.
         Iterator[EntryData]
             The catalog entries.
         """
@@ -207,7 +209,13 @@ class OldCatalogCollector(Collector):
 
                     c[len(book['tags'])] += 1
 
+                    image_bytes = None
+                    if self.image_folder and (cover := book.get('cover_filename')):
+                        image_path = self.image_folder / cover
+                        if image_path.is_file():
+                            image_bytes = image_path.read_bytes()
+
                     if book_type == 'book':
-                        yield self.book_entry_class(**book)
+                        yield (image_bytes, self.book_entry_class(**book))
                     elif book_type == 'audiobook':
-                        yield self.audiobook_entry_class(**book)
+                        yield (image_bytes, self.audiobook_entry_class(**book))

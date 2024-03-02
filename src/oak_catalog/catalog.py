@@ -39,6 +39,7 @@ class OakCatalog:
             'name': 'Old Catalog',
             'params': {
                 'catalog_file': Path('../oak/work/catalogue.json'),
+                'image_folder': Path('../oak/output/covers'),
                 'book_entry_class': BookEntryData,
                 'audiobook_entry_class': AudiobookEntryData,
             },
@@ -88,10 +89,19 @@ class OakCatalog:
         c = Counter()
         for source in self.source_collection:
             print(f"Collecting from {source['name']}: ", end='')
+            for label, attribute in source.get('dynamic_params', {}).items():
+                source['params'][label] = getattr(self, attribute)
             collector = source['collector'](**source['params'])
-            for entry_data in collector.collect():
+            for cover_bytes, entry_data in collector.collect():
                 c[source['name']] += 1
-                print('.', end='')
+                if cover_bytes and entry_data.cover_filename:
+                    with open(
+                        self.image_folder_path / entry_data.cover_filename, 'wb'
+                    ) as cover_file:
+                        cover_file.write(cover_bytes)
+                        print('+', end='')
+                else:
+                    print('.', end='')
                 entry = Entry.from_data(entry_data)
                 entry.save(self.markdown_folder)
             print(f" done ({c[source['name']]} entries)")

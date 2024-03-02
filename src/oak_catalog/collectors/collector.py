@@ -13,8 +13,10 @@ class Collector:
         """
         Collect data to create catalog entries.
 
-        Returns
-        -------
+        Yields
+        ------
+        bytes
+            The cover image bytes.
         Iterator[CatalogEntry]
             The catalog entries.
         """

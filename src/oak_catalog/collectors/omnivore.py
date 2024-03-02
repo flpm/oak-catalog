@@ -138,4 +138,4 @@ class OmnivoreCollector(Collector):
         """
         for frontmatter, content in self.folder.for_each_markdown():
             frontmatter['description'] = content
-            yield self.collect_one(frontmatter)
+            yield (None, self.collect_one(frontmatter))
