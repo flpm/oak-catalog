@@ -3,7 +3,8 @@
 from collections import Counter
 from pathlib import Path
 
-from .collector import OldCatalogCollector, OmnivoreCollector
+from .collectors.old_catalog import OldCatalogCollector
+from .collectors.omnivore import OmnivoreCollector
 from .entry import Entry
 from .entry_data import AudiobookEntryData, BookEntryData, LinkEntryData
 from .folder import Folder
