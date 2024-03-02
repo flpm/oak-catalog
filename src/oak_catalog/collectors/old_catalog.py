@@ -86,6 +86,7 @@ class OldCatalogCollector(Collector):
     def __init__(
         self,
         catalog_file: str | Path,
+        image_folder: str | Path | None = None,
         book_entry_class: EntryData = BookEntryData,
         audiobook_entry_class: EntryData = AudiobookEntryData,
     ):
@@ -96,6 +97,8 @@ class OldCatalogCollector(Collector):
         ----------
         catalog_file : str | Path
             The file to collect data from.
+        image_folder : str | Path
+            The folder containing the images.
         book_entry_class : EntryData
             The entry class to use for books, by default BookEntryData.
         audiobook_entry_class : EntryData
@@ -112,6 +115,12 @@ class OldCatalogCollector(Collector):
             self.catalog_file = catalog_file
         else:
             self.catalog_file = Path(catalog_file)
+        if image_folder is None:
+            self.image_folder = None
+        elif isinstance(image_folder, Path):
+            self.image_folder = image_folder
+        else:
+            self.image_folder = Path(image_folder)
 
     def collect(self):
         """
