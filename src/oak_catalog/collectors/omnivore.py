@@ -1,14 +1,12 @@
 """Class to collect data from the Omnivore folder."""
 
 import favicon
-import requests
-from wand.exceptions import CorruptImageError
-from wand.image import Image
 
 from ..entry_data import EntryData, LinkEntryData
 from ..folder import Folder
 from ..utils import validate_author, validate_date
 from .collector import Collector
+from .utils import get_image
 
 
 class OmnivoreCollector(Collector):
@@ -23,7 +21,12 @@ class OmnivoreCollector(Collector):
             The entry class to use, by default LinkEntryData
     """
 
-    def __init__(self, folder: str | Folder, entry_class: EntryData = LinkEntryData):
+    def __init__(
+        self,
+        folder: str | Folder,
+        entry_class: EntryData = LinkEntryData,
+        image_cache_folder: str | Folder = None,
+    ):
         """
         Initialize the collector.
 
@@ -33,6 +36,8 @@ class OmnivoreCollector(Collector):
             The folder to collect data from.
         entry_class : EntryData, optional
             The entry class to use, by default EntryData
+        image_cache_folder : str | Folder
+            The folder to cache the images, by default './work/images'.
 
         Raises
         ------
@@ -46,6 +51,15 @@ class OmnivoreCollector(Collector):
             self.folder = Folder(folder)
         else:
             raise ValueError('Folder must be a string or a Folder instance')
+        if image_cache_folder is None:
+            image_cache_folder = './work/images'
+        if isinstance(image_cache_folder, Folder):
+            self.image_cache_folder = image_cache_folder
+        elif isinstance(image_cache_folder, str):
+            self.image_cache_folder = Folder(image_cache_folder)
+        else:
+            raise ValueError('Image cache folder must be a string or a Folder instance')
+        self.image_cache_folder.create()
 
     def collect_one_favicon(self, domain: str):
         """
@@ -63,48 +77,40 @@ class OmnivoreCollector(Collector):
         bytes
             The image.
         """
+
         try:
             icons = favicon.get(f'http://{domain}')
         except Exception:
             icons = []
-        image_bytes = None
+
+        image = None
         image_format = None
         for i in icons:
             if i.width >= 128:
                 image_format = i.format
-                try:
-                    image_bytes = requests.get(i.url).content
-                except Exception:
-                    image_bytes = image_format = None
-                else:
+                image = get_image(domain, i.format, i.url, self.image_cache_folder)
+                if image:
                     break
+            else:
+                image_format = image = None
         else:
             for i in icons:
                 if i.format in ('png', 'jpg', 'jpeg'):
                     image_format = i.format
-                    try:
-                        image_bytes = requests.get(i.url).content
-                    except Exception:
-                        image_bytes = image_format = None
+                    image = get_image(domain, i.format, i.url, self.image_cache_folder)
+                    if not image:
                         continue
-                    try:
-                        img = Image(blob=image_bytes, format=image_format)
-                    except CorruptImageError:
-                        image_format = image_bytes = None
-                        continue
-                    if img.width > 128:
+                    if image.width > 128:
                         break
                 else:
-                    image_format = image_bytes = None
-        if image_bytes and image_format:
-            try:
-                img = Image(blob=image_bytes, format=image_format)
-            except CorruptImageError:
-                return None, None
-            if img.width > 256:
-                img.transform(resize='256x')
-            if img.height > 128:
-                return image_format, img.make_blob(image_format)
+                    image_format = image = None
+
+        if image_format and image:
+            if image.width > 256:
+                image.transform(resize='256x')
+            if image.height > 128:
+                return image_format, image.make_blob(image_format)
+
         return None, None
 
     def collect_one(self, frontmatter: dict):

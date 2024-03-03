@@ -125,6 +125,50 @@ class Folder:
         for markdown_file in self.for_each(glob='*.md', recursive=recursive):
             yield self.read_markdown(markdown_file)
 
+    def read_image(self, filename: str | Path):
+        """
+        Read an image file.
+
+        Parameters
+        ----------
+        filename : str | Path
+            The filename of the image file.
+
+        Returns
+        -------
+        bytes
+            The content of the image file.
+        """
+        if isinstance(filename, Path):
+            file = filename
+        else:
+            file = self.path / filename
+
+        try:
+            with file.open('rb') as fp:
+                return fp.read()
+        except FileNotFoundError:
+            return None
+
+    def write_image(self, filename: str | Path, content: bytes):
+        """
+        Write an image file.
+
+        Parameters
+        ----------
+        filename : str | Path
+            The filename of the image file.
+        content : bytes
+            The content of the image file.
+        """
+        if isinstance(filename, Path):
+            file = filename
+        else:
+            file = self.path / filename
+
+        with file.open('wb') as fp:
+            fp.write(content)
+
     def write_markdown(
         self,
         filename: str | Path,
