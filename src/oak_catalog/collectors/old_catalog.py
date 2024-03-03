@@ -4,6 +4,8 @@ import json
 from collections import Counter
 from pathlib import Path
 
+from wand.image import Image
+
 from ..entry_data import AudiobookEntryData, BookEntryData, EntryData
 from .collector import Collector
 
@@ -135,6 +137,7 @@ class OldCatalogCollector(Collector):
         """
         c = Counter()
         t = Counter()
+        bytes_size = 0
         with open(self.catalog_file, 'r') as f:
             catalog_json = json.load(f)
             for book_id, book_types in catalog_json.items():
@@ -212,10 +215,17 @@ class OldCatalogCollector(Collector):
                     image_bytes = None
                     if self.image_folder and (cover := book.get('cover_filename')):
                         image_path = self.image_folder / cover
-                        if image_path.is_file():
-                            image_bytes = image_path.read_bytes()
-
+                        with Image(filename=image_path) as img:
+                            # ! This particular book cover causes a segfault in ImageMagick, so we skip it
+                            # B08ZYXLTYG Beginner's Mind by Yo-Yo Ma
+                            if book_id not in ('B08ZYXLTYG'):
+                                if img.width > 256:
+                                    img.transform(resize='256x')
+                                image_bytes = img.make_blob(format='jpeg')
+                                bytes_size += len(image_bytes)
                     if book_type == 'book':
                         yield (image_bytes, self.book_entry_class(**book))
                     elif book_type == 'audiobook':
                         yield (image_bytes, self.audiobook_entry_class(**book))
+
+            print(bytes_size)

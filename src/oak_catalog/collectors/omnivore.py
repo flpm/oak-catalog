@@ -1,5 +1,10 @@
 """Class to collect data from the Omnivore folder."""
 
+import favicon
+import requests
+from wand.exceptions import CorruptImageError
+from wand.image import Image
+
 from ..entry_data import EntryData, LinkEntryData
 from ..folder import Folder
 from ..utils import validate_author, validate_date
@@ -41,6 +46,66 @@ class OmnivoreCollector(Collector):
             self.folder = Folder(folder)
         else:
             raise ValueError('Folder must be a string or a Folder instance')
+
+    def collect_one_favicon(self, domain: str):
+        """
+        Collect the favicon to create a cover for the link.
+
+        Parameters
+        ----------
+        domain : str
+            The domain where to look for the favicon.
+
+        Returns
+        -------
+        str
+            The format of the image.
+        bytes
+            The image.
+        """
+        try:
+            icons = favicon.get(f'http://{domain}')
+        except Exception:
+            icons = []
+        image_bytes = None
+        image_format = None
+        for i in icons:
+            if i.width >= 128:
+                image_format = i.format
+                try:
+                    image_bytes = requests.get(i.url).content
+                except Exception:
+                    image_bytes = image_format = None
+                else:
+                    break
+        else:
+            for i in icons:
+                if i.format in ('png', 'jpg', 'jpeg'):
+                    image_format = i.format
+                    try:
+                        image_bytes = requests.get(i.url).content
+                    except Exception:
+                        image_bytes = image_format = None
+                        continue
+                    try:
+                        img = Image(blob=image_bytes, format=image_format)
+                    except CorruptImageError:
+                        image_format = image_bytes = None
+                        continue
+                    if img.width > 128:
+                        break
+                else:
+                    image_format = image_bytes = None
+        if image_bytes and image_format:
+            try:
+                img = Image(blob=image_bytes, format=image_format)
+            except CorruptImageError:
+                return None, None
+            if img.width > 256:
+                img.transform(resize='256x')
+            if img.height > 128:
+                return image_format, img.make_blob(image_format)
+        return None, None
 
     def collect_one(self, frontmatter: dict):
         """
@@ -136,6 +201,15 @@ class OmnivoreCollector(Collector):
         Iterator[EntryData], optional
             The catalog entry, by default EntryData.
         """
+        favicons = {}
         for frontmatter, content in self.folder.for_each_markdown():
             frontmatter['description'] = content
-            yield (None, self.collect_one(frontmatter))
+            entry = self.collect_one(frontmatter)
+            if entry.domain in favicons:
+                img_format, img_bytes = favicons[entry.domain]
+            else:
+                img_format, img_bytes = self.collect_one_favicon(entry.domain)
+                favicons[entry.domain] = (img_format, img_bytes)
+            if img_format and img_bytes:
+                entry.cover_filename = f'{entry.domain.lower()}.{img_format}'
+            yield (img_bytes, entry)
