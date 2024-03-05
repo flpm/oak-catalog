@@ -1,8 +1,33 @@
 """Utility functions for the collectors module."""
 
 import requests
-from wand.exceptions import CorruptImageError
+from wand.exceptions import CorruptImageError, OptionError
 from wand.image import Image
+
+
+def get_image_from_cache(image_cache_folder, cache_name):
+    """
+    Get an image from the cache.
+
+    Parameters
+    ----------
+    image_cache_folder : Folder
+        The folder containing the cached images.
+    cache_name : str
+        The name of the image in the cache.
+
+    Returns
+    -------
+    Image
+        The image.
+    """
+    cached_image = image_cache_folder.read_image(cache_name)
+    if cached_image:
+        try:
+            return Image(blob=cached_image, format=cache_name.split('.')[1])
+        except (CorruptImageError, OptionError):
+            return None
+    return None
 
 
 def get_image(domain, format, url, image_cache_folder):
@@ -19,11 +44,16 @@ def get_image(domain, format, url, image_cache_folder):
         The url of the image.
     image_cache_folder : Folder
         The folder containing the cached images.
+
+    Returns
+    -------
+    Image
+        The image as a wand.image.Image instance.
     """
     cache_name = f'{domain.lower()}.{format}'
-    cached_image = image_cache_folder.read_image(cache_name)
+    cached_image = get_image_from_cache(image_cache_folder, cache_name)
     if cached_image:
-        return Image(blob=cached_image, format=format)
+        return cached_image
 
     try:
         response = requests.get(url)

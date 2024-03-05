@@ -6,7 +6,7 @@ from ..entry_data import EntryData, LinkEntryData
 from ..folder import Folder
 from ..utils import validate_author, validate_date
 from .collector import Collector
-from .utils import get_image
+from .utils import get_image, get_image_from_cache
 
 
 class OmnivoreCollector(Collector):
@@ -77,33 +77,42 @@ class OmnivoreCollector(Collector):
         bytes
             The image.
         """
-
-        try:
-            icons = favicon.get(f'http://{domain}')
-        except Exception:
-            icons = []
-
-        image = None
-        image_format = None
-        for i in icons:
-            if i.width >= 128:
-                image_format = i.format
-                image = get_image(domain, i.format, i.url, self.image_cache_folder)
-                if image:
-                    break
-            else:
-                image_format = image = None
+        image = image_format = None
+        for image_format in ('png', 'jpg', 'jpeg'):
+            image = get_image_from_cache(
+                self.image_cache_folder, cache_name=f'{domain.lower()}.{image_format}'
+            )
+            if image:
+                break
         else:
+            image = None
+            image_format = None
+            try:
+                icons = favicon.get(f'http://{domain}')
+            except Exception:
+                icons = []
+
             for i in icons:
-                if i.format in ('png', 'jpg', 'jpeg'):
+                if i.width >= 128:
                     image_format = i.format
                     image = get_image(domain, i.format, i.url, self.image_cache_folder)
-                    if not image:
-                        continue
-                    if image.width > 128:
+                    if image:
                         break
                 else:
                     image_format = image = None
+            else:
+                for i in icons:
+                    if i.format in ('png', 'jpg', 'jpeg'):
+                        image_format = i.format
+                        image = get_image(
+                            domain, i.format, i.url, self.image_cache_folder
+                        )
+                        if not image:
+                            continue
+                        if image.width > 128:
+                            break
+                    else:
+                        image_format = image = None
 
         if image_format and image:
             if image.width > 256:
@@ -111,7 +120,12 @@ class OmnivoreCollector(Collector):
             if image.height > 128:
                 return image_format, image.make_blob(image_format)
 
-        return None, None
+        # If no favicon is found, use a default one
+        default_image = get_image_from_cache(
+            self.image_cache_folder, cache_name='missing.png'
+        )
+        default_image.transform(resize='256x')
+        return 'png', default_image.make_blob('png')
 
     def collect_one(self, frontmatter: dict):
         """
