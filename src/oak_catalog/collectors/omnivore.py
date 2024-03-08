@@ -120,12 +120,7 @@ class OmnivoreCollector(Collector):
             if image.height > 128:
                 return image_format, image.make_blob(image_format)
 
-        # If no favicon is found, use a default one
-        default_image = get_image_from_cache(
-            self.image_cache_folder, cache_name='missing.png'
-        )
-        default_image.transform(resize='256x')
-        return 'png', default_image.make_blob('png')
+        return None, None
 
     def collect_one(self, frontmatter: dict):
         """
@@ -222,6 +217,11 @@ class OmnivoreCollector(Collector):
             The catalog entry, by default EntryData.
         """
         favicons = {}
+        default_image = get_image_from_cache(
+            self.image_cache_folder, cache_name='missing.png'
+        )
+        default_image.transform(resize='256x')
+        default_image_bytes = default_image.make_blob('png')
         for frontmatter, content in self.folder.for_each_markdown():
             frontmatter['description'] = content
             entry = self.collect_one(frontmatter)
@@ -229,7 +229,11 @@ class OmnivoreCollector(Collector):
                 img_format, img_bytes = favicons[entry.domain]
             else:
                 img_format, img_bytes = self.collect_one_favicon(entry.domain)
-                favicons[entry.domain] = (img_format, img_bytes)
+                if img_format and img_bytes:
+                    favicons[entry.domain] = (img_format, img_bytes)
             if img_format and img_bytes:
                 entry.cover_filename = f'{entry.domain.lower()}.{img_format}'
+            else:
+                entry.cover_filename = 'missing.png'
+                img_bytes = default_image_bytes
             yield (img_bytes, entry)

@@ -228,4 +228,4 @@ class OldCatalogCollector(Collector):
                     elif book_type == 'audiobook':
                         yield (image_bytes, self.audiobook_entry_class(**book))
 
-            print(bytes_size)
+            print(f'(total image size {bytes_size})', end=' ')

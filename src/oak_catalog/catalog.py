@@ -77,12 +77,14 @@ class OakCatalog:
         self.image_folder_path.mkdir(parents=True, exist_ok=True)
         self.image_folder = Folder(self.image_folder_path)
 
-    def build(self, sources: list = None):
+    def build(self, override_images: bool = False, sources: list = None):
         """
         Build the catalog.
 
         Parameters
         ----------
+        override_images : bool, optional
+            Whether to override the images, by default False.
         sources : list, optional
             The sources to build the catalog from.
         """
@@ -95,16 +97,18 @@ class OakCatalog:
             for cover_bytes, entry_data in collector.collect():
                 c[source['name']] += 1
                 if cover_bytes and entry_data.cover_filename:
-                    with open(
-                        self.image_folder_path / entry_data.cover_filename, 'wb'
-                    ) as cover_file:
-                        cover_file.write(cover_bytes)
-                        print('+', end='')
+                    filepath = self.image_folder_path / entry_data.cover_filename
+                    if override_images or not filepath.exists():
+                        with open(filepath, 'wb') as cover_file:
+                            cover_file.write(cover_bytes)
+                            print('+', end='')
+                    else:
+                        print('=', end='')
                 else:
                     print('.', end='')
                 entry = Entry.from_data(entry_data)
                 entry.save(self.markdown_folder)
-            print(f" done ({c[source['name']]} entries)")
+            print(f" finished ({c[source['name']]} entries)")
 
     def backup(self, backup_folder: str = None):
         """
