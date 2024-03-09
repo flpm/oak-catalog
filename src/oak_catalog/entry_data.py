@@ -10,19 +10,28 @@ class EntryData(BaseModel):
     """Represent a generic entry in the catalog."""
 
     entry_id: str = Field(min_length=1)
-    entry_type: Union[Literal['link'], Literal['audiobook'], Literal['book']]
+    entry_type: Union[
+        Literal['link'], Literal['audiobook'], Literal['book'], Literal['list']
+    ]
     format: str
 
     title: str = Field(min_length=1)
     subtitle: str | None = None
     full_title: str | None = None
 
+    description: str | None = None
+    summary: str | None = None
+
+    cover_filename: str | None = None
+    cover_url: str | None = None
+
+
+class ContentEntryData(EntryData):
+    """Represent a content entry in the catalog."""
+
     author: List[str] = Field(default_factory=list)
     publisher: str
     published_date: date | str | None = None
-
-    description: str | None = None
-    summary: str | None = None
 
     language: List[str] | None = Field(default_factory=lambda: ['English'])
     theme: str | None = None
@@ -44,9 +53,6 @@ class EntryData(BaseModel):
             'description',
         ]
     )
-
-    cover_filename: str | None = None
-    cover_url: str | None = None
 
     def merge(
         self,
@@ -99,7 +105,7 @@ class EntryData(BaseModel):
         return changed
 
 
-class LinkEntryData(EntryData):
+class LinkEntryData(ContentEntryData):
     """Represent a link entry in the catalog."""
 
     url: str
@@ -110,7 +116,7 @@ class LinkEntryData(EntryData):
     )
 
 
-class AudiobookEntryData(EntryData):
+class AudiobookEntryData(ContentEntryData):
     """Represent an audiobook entry in the catalog."""
 
     narrator: List[str] = Field(default_factory=list)
@@ -132,7 +138,7 @@ class AudiobookEntryData(EntryData):
     )
 
 
-class BookEntryData(EntryData):
+class BookEntryData(ContentEntryData):
     """Represent a book entry in the catalog."""
 
     isbn: str | None = None
@@ -149,5 +155,19 @@ class BookEntryData(EntryData):
             'theme',
             'summary',
             'description',
+        ]
+    )
+
+
+class ListEntryData(EntryData):
+    """Represent a list entry in the catalog."""
+
+    list_items: List[EntryData | None]
+
+    protected_fields: list = Field(
+        default_factory=lambda: [
+            'entry_id',
+            'entry_type',
+            'protected_fields',
         ]
     )

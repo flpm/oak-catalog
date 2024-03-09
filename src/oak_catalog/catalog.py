@@ -24,6 +24,8 @@ class OakCatalog:
         The folder containing the Markdown files.
     image_folder : str
         The folder containing the images.
+    entries : dict
+        The entries in the catalog, indexed by entry_id.
     """
 
     source_collection = [
@@ -77,6 +79,8 @@ class OakCatalog:
         self.image_folder_path.mkdir(parents=True, exist_ok=True)
         self.image_folder = Folder(self.image_folder_path)
 
+        self.entries = {}
+
     def build(self, override_images: bool = False, sources: list = None):
         """
         Build the catalog.
@@ -108,6 +112,7 @@ class OakCatalog:
                     print('.', end='')
                 entry = Entry.from_data(entry_data)
                 entry.save(self.markdown_folder)
+                self.entries[entry.entry_id] = entry
             print(f" finished ({c[source['name']]} entries)")
 
     def backup(self, backup_folder: str = None):
