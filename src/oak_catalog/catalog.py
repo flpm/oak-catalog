@@ -6,7 +6,7 @@ from pathlib import Path
 from .collectors.old_catalog import OldCatalogCollector
 from .collectors.omnivore import OmnivoreCollector
 from .entry import Entry
-from .entry_data import AudiobookEntryData, BookEntryData, LinkEntryData
+from .entry_data import AudiobookEntryData, BookEntryData, LinkEntryData, ListEntryData
 from .folder import Folder
 
 
@@ -114,6 +114,24 @@ class OakCatalog:
                 entry.save(self.markdown_folder)
                 self.entries[entry.entry_id] = entry
             print(f" finished ({c[source['name']]} entries)")
+
+    def make_theme_lists(self):
+        """
+        Make lists of entries by theme.
+        """
+        themes = {}
+        for entry in self.entries.values():
+            if theme := entry.data.theme:
+                if theme not in themes:
+                    themes[theme] = ListEntryData(
+                        entry_id=theme,
+                        entry_type='list',
+                        title=theme,
+                        theme=theme,
+                        summary=f'Entries for the theme {theme}.',
+                    )
+                themes[theme].append(entry.data)
+        return themes
 
     def backup(self, backup_folder: str = None):
         """

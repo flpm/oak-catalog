@@ -214,7 +214,8 @@ class Folder:
             fp.write('---\n')
             fp.write(yaml_frontmatter)
             fp.write('---\n')
-            fp.write(content)
+            if content:
+                fp.write(content)
             fp.write('\n')
 
     def read_markdown(self, filename: str | Path):

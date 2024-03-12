@@ -13,7 +13,7 @@ class EntryData(BaseModel):
     entry_type: Union[
         Literal['link'], Literal['audiobook'], Literal['book'], Literal['list']
     ]
-    format: str
+    format: str | None = None
 
     title: str = Field(min_length=1)
     subtitle: str | None = None
@@ -162,7 +162,7 @@ class BookEntryData(ContentEntryData):
 class ListEntryData(EntryData):
     """Represent a list entry in the catalog."""
 
-    list_items: List[EntryData | None]
+    list_items: List[EntryData | None] = Field(default_factory=list)
 
     protected_fields: list = Field(
         default_factory=lambda: [
@@ -171,3 +171,64 @@ class ListEntryData(EntryData):
             'protected_fields',
         ]
     )
+
+    def append(self, entry: EntryData):
+        """
+        Append an entry to the list.
+
+        Parameters
+        ----------
+        entry : EntryData
+            The entry to append.
+        """
+        self.list_items.append(entry)
+
+    def remove(self, entry: EntryData):
+        """
+        Remove an entry from the list.
+
+        Parameters
+        ----------
+        entry : EntryData
+            The entry to remove.
+        """
+        self.list_items.remove(entry)
+
+    def __getitem__(self, index: int):
+        """
+        Get an item from the list.
+
+        Parameters
+        ----------
+        index : int
+            The index of the item.
+
+        Returns
+        -------
+        EntryData
+            The item.
+        """
+        return self.list_items[index]
+
+    def __len__(self):
+        """
+        Get the length of the list.
+
+        Returns
+        -------
+        int
+            The length of the list.
+        """
+        return len(self.list_items)
+
+    def __iter__(self):
+        """
+        Iterate over the list.
+
+        Yields
+        ------
+        EntryData
+            The items in the list.
+        """
+        for item in self.list_items:
+            yield item
