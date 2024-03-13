@@ -25,34 +25,8 @@ class EntryData(BaseModel):
     cover_filename: str | None = None
     cover_url: str | None = None
 
-
-class ContentEntryData(EntryData):
-    """Represent a content entry in the catalog."""
-
-    author: List[str] = Field(default_factory=list)
-    publisher: str
-    published_date: date | str | None = None
-
-    language: List[str] | None = Field(default_factory=lambda: ['English'])
-    theme: str | None = None
-    topics: List[str] = Field(default_factory=list)
-    tags: List[str] = Field(default_factory=list)
-
-    entry_creation_date: date = Field(default_factory=date.today)
-    read_date: date | str | None = None
-
-    source: str = None
-    protected_fields: list = Field(
-        default_factory=lambda: [
-            'entry_id',
-            'entry_type',
-            'protected_fields',
-            'tags',
-            'theme',
-            'summary',
-            'description',
-        ]
-    )
+    def __hash__(self) -> int:
+        return self.entry_id.__hash__()
 
     def merge(
         self,
@@ -103,6 +77,35 @@ class ContentEntryData(EntryData):
                 setattr(self, field, getattr(entry, field))
                 changed = True
         return changed
+
+
+class ContentEntryData(EntryData):
+    """Represent a content entry in the catalog."""
+
+    author: List[str] = Field(default_factory=list)
+    publisher: str | None = None
+    published_date: date | str | None = None
+
+    language: List[str] | None = Field(default_factory=lambda: ['English'])
+    theme: str | None = None
+    topics: List[str] = Field(default_factory=list)
+    tags: List[str] = Field(default_factory=list)
+
+    entry_creation_date: date = Field(default_factory=date.today)
+    read_date: date | str | None = None
+
+    source: str = None
+    protected_fields: list = Field(
+        default_factory=lambda: [
+            'entry_id',
+            'entry_type',
+            'protected_fields',
+            'tags',
+            'theme',
+            'summary',
+            'description',
+        ]
+    )
 
 
 class LinkEntryData(ContentEntryData):
@@ -162,7 +165,9 @@ class BookEntryData(ContentEntryData):
 class ListEntryData(EntryData):
     """Represent a list entry in the catalog."""
 
-    list_items: List[EntryData | None] = Field(default_factory=list)
+    list_items: List[BookEntryData | AudiobookEntryData | LinkEntryData] = Field(
+        default_factory=list
+    )
 
     protected_fields: list = Field(
         default_factory=lambda: [
