@@ -75,6 +75,13 @@ class OakCatalog:
         self.markdown_folder_path.mkdir(parents=True, exist_ok=True)
         self.markdown_folder = Folder(self.markdown_folder_path)
 
+        self.folders_by_type = {
+            'book': Folder(self.markdown_folder_path / 'books'),
+            'audiobook': Folder(self.markdown_folder_path / 'audiobooks'),
+            'list': Folder(self.markdown_folder_path / 'lists'),
+            'link': Folder(self.markdown_folder_path / 'links'),
+        }
+
         self.image_folder_path = self.catalog_folder_path / 'images'
         self.image_folder_path.mkdir(parents=True, exist_ok=True)
         self.image_folder = Folder(self.image_folder_path)
@@ -111,13 +118,31 @@ class OakCatalog:
                 else:
                     print('.', end='')
                 entry = Entry.from_data(entry_data)
-                entry.save(self.markdown_folder)
+                if entry_type := entry.data.entry_type:
+                    if entry_type not in self.folders_by_type:
+                        self.folders_by_type[entry_type] = Folder(
+                            self.markdown_folder_path / entry_type
+                        )
+                    entry.save(self.folders_by_type[entry_type])
+                else:
+                    entry.save(self.markdown_folder)
                 self.entries[entry.entry_id] = entry
             print(f" finished ({c[source['name']]} entries)")
+
+        print('\n\nBuilding theme lists: ')
+        for theme, entry_data in self.make_theme_lists().items():
+            entry = Entry.from_data(entry_data)
+            entry.save(self.folders_by_type['list'])
+            print(f'   - {theme}: {len(entry_data.list_items)} entries')
 
     def make_theme_lists(self):
         """
         Make lists of entries by theme.
+
+        Returns
+        -------
+        dict
+            The lists of entries by theme.
         """
         themes = {}
         for entry in self.entries.values():
@@ -126,11 +151,20 @@ class OakCatalog:
                     themes[theme] = ListEntryData(
                         entry_id=theme,
                         entry_type='list',
+                        format='theme',
                         title=theme,
                         theme=theme,
                         summary=f'Entries for the theme {theme}.',
                     )
                 themes[theme].append(entry.data)
+
+        for entry in themes.values():
+            entry.list_items = sorted(
+                entry.list_items,
+                key=lambda x: x.entry_date or '1900-01-01',
+                reverse=True,
+            )
+            entry.type_count = Counter([x.entry_type for x in entry.list_items])
         return themes
 
     def backup(self, backup_folder: str = None):

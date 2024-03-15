@@ -25,7 +25,10 @@ class EntryData(BaseModel):
     cover_filename: str | None = None
     cover_url: str | None = None
 
+    entry_date: date | str | None = None
+
     def __hash__(self) -> int:
+        """Return the hash of the entry ID."""
         return self.entry_id.__hash__()
 
     def merge(
@@ -165,16 +168,16 @@ class BookEntryData(ContentEntryData):
 class ListEntryData(EntryData):
     """Represent a list entry in the catalog."""
 
-    list_items: List[BookEntryData | AudiobookEntryData | LinkEntryData] = Field(
-        default_factory=list
-    )
-
+    type_count: dict = Field(default_factory=dict)
     protected_fields: list = Field(
         default_factory=lambda: [
             'entry_id',
             'entry_type',
             'protected_fields',
         ]
+    )
+    list_items: List[BookEntryData | AudiobookEntryData | LinkEntryData] = Field(
+        default_factory=list
     )
 
     def append(self, entry: EntryData):

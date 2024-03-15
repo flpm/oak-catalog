@@ -26,7 +26,7 @@ class Folder:
             Whether to create the folder if it does not exist, by default False.
     """
 
-    def __init__(self, folder_path: Path | str, create: bool = False):
+    def __init__(self, folder_path: Path | str, create: bool = True):
         """
         Initialize a folder.
 
@@ -216,7 +216,7 @@ class Folder:
             fp.write('---\n')
             if content:
                 fp.write(content)
-            fp.write('\n')
+            # fp.write('\n')
 
     def read_markdown(self, filename: str | Path):
         """

@@ -35,7 +35,10 @@ class Entry:
         """
         self.entry_id = entry_id
         self.entry_type = entry_type
-        self.filename = f'{entry_type}_{entry_id}.md'
+        if data.entry_type == 'list' and (entry_format := data.format):
+            self.filename = f'{entry_format}_{entry_id}.md'
+        else:
+            self.filename = f'{entry_type}_{entry_id}.md'
         self.data = data
 
     @classmethod
