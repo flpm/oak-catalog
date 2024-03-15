@@ -28,7 +28,14 @@ class EntryData(BaseModel):
     entry_date: date | str | None = None
 
     def __hash__(self) -> int:
-        """Return the hash of the entry ID."""
+        """
+        Return the hash of the entry ID.
+
+        Returns
+        -------
+        int
+            The hash of the entry ID.
+        """
         return self.entry_id.__hash__()
 
     def merge(
